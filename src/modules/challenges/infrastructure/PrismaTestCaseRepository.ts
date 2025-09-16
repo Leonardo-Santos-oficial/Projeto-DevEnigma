@@ -1,4 +1,5 @@
 import type { PrismaClient } from '@prisma/client';
+
 import { TestCase } from '../domain/TestCase';
 import type { TestCaseRepository } from '../domain/TestCaseRepository';
 

@@ -1,7 +1,8 @@
-import { container, TOKENS } from '@core/di/container';
-import type { ChallengeRepository } from '@modules/challenges/domain/ChallengeRepository';
 import '@core/bootstrap';
 import Link from 'next/link';
+
+import { container, TOKENS } from '@core/di/container';
+import type { ChallengeRepository } from '@modules/challenges/domain/ChallengeRepository';
 
 export const dynamic = 'force-dynamic';
 

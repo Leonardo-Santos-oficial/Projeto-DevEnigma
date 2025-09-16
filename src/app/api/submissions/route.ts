@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import '@core/bootstrap';
+
 import { container, TOKENS } from '@core/di/container';
 import type { Logger } from '@core/logging/Logger';
 import type { SubmissionService, CreateSubmissionInput } from '@modules/submissions/domain/SubmissionService';
@@ -20,7 +21,9 @@ export async function POST(request: Request) {
     try {
       const logger = container.resolve<Logger>('Logger');
       logger.error('api.submission.error', { error: (err as Error).message });
-    } catch {}
+    } catch (inner) {
+      // swallow secondary logging error intentionally
+    }
     return NextResponse.json({ error: 'Erro ao processar submissão' }, { status: 500 });
   }
 }

@@ -6,6 +6,10 @@ module.exports = {
   parser: '@typescript-eslint/parser',
   parserOptions: { project: null },
   plugins: ['@typescript-eslint', 'import', 'unused-imports'],
+  settings: {
+    // Trata aliases TS como imports internos para ordenar corretamente
+    'import/internal-regex': '^(@core|@modules)/'
+  },
   extends: [
     'next/core-web-vitals',
     'eslint:recommended',

@@ -1,12 +1,14 @@
-import { describe, it, expect } from 'vitest';
-import { InMemoryTestCaseRepository } from '@modules/challenges/infrastructure/InMemoryTestCaseRepository';
+import { describe, expect, it } from 'vitest';
+
+import { logger } from '@core/logging/Logger';
 import { TestCase } from '@modules/challenges/domain/TestCase';
+import { InMemoryTestCaseRepository } from '@modules/challenges/infrastructure/InMemoryTestCaseRepository';
+
+import { WhitespaceCaseInsensitiveStrategy } from '../domain/EvaluationStrategy';
+import { DefaultSubmissionService } from '../domain/SubmissionService';
+import { SubmissionStatus } from '../domain/SubmissionStatus';
 import { InMemorySubmissionRepository } from '../infrastructure/InMemorySubmissionRepository';
 import { MockJudge0Client } from '../infrastructure/MockJudge0Client';
-import { DefaultSubmissionService } from '../domain/SubmissionService';
-import { WhitespaceCaseInsensitiveStrategy } from '../domain/EvaluationStrategy';
-import { logger } from '@core/logging/Logger';
-import { SubmissionStatus } from '../domain/SubmissionStatus';
 
 function makeTestCase(id: string, input: string, expected: string, challengeId: string) {
   return TestCase.create({ id, input, expectedOutput: expected, isHidden: false, challengeId });

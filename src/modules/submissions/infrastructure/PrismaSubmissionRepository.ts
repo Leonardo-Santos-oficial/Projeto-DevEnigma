@@ -1,6 +1,7 @@
 import type { PrismaClient } from '@prisma/client';
-import type { SubmissionRepository } from '../domain/SubmissionRepository';
+
 import { Submission } from '../domain/Submission';
+import type { SubmissionRepository } from '../domain/SubmissionRepository';
 import { SubmissionStatus } from '../domain/SubmissionStatus';
 
 export class PrismaSubmissionRepository implements SubmissionRepository {

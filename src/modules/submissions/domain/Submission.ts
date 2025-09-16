@@ -1,4 +1,4 @@
-import { SubmissionStatus } from './SubmissionStatus';
+import type { SubmissionStatus } from './SubmissionStatus';
 
 export interface SubmissionProps {
   id: string;

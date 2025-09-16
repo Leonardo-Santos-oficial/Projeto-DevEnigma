@@ -1,5 +1,5 @@
 import type { Submission } from './Submission';
-import { SubmissionStatus } from './SubmissionStatus';
+import type { SubmissionStatus } from './SubmissionStatus';
 
 export interface SubmissionRepository {
   findById(id: string): Promise<Submission | null>;

@@ -1,26 +1,30 @@
 // Composition Root
-
 import { PrismaClient } from '@prisma/client';
 
 import { loadEnv } from '@core/config/env';
+import { logger } from '@core/logging/Logger';
 import { Challenge } from '@modules/challenges/domain/Challenge';
 import { InMemoryChallengeRepository } from '@modules/challenges/infrastructure/InMemoryChallengeRepository';
-import { PrismaChallengeRepository } from '@modules/challenges/infrastructure/PrismaChallengeRepository';
 import { InMemoryTestCaseRepository } from '@modules/challenges/infrastructure/InMemoryTestCaseRepository';
+import { PrismaChallengeRepository } from '@modules/challenges/infrastructure/PrismaChallengeRepository';
 import { PrismaTestCaseRepository } from '@modules/challenges/infrastructure/PrismaTestCaseRepository';
-import { InMemorySubmissionRepository } from '@modules/submissions/infrastructure/InMemorySubmissionRepository';
-import { PrismaSubmissionRepository } from '@modules/submissions/infrastructure/PrismaSubmissionRepository';
-import { MockJudge0Client } from '@modules/submissions/infrastructure/MockJudge0Client';
-import { Judge0HttpClient } from '@modules/submissions/infrastructure/Judge0HttpClient';
-import { DefaultSubmissionService } from '@modules/submissions/domain/SubmissionService';
 import { WhitespaceCaseInsensitiveStrategy } from '@modules/submissions/domain/EvaluationStrategy';
+import { DefaultSubmissionService } from '@modules/submissions/domain/SubmissionService';
+import { InMemorySubmissionRepository } from '@modules/submissions/infrastructure/InMemorySubmissionRepository';
+import { Judge0HttpClient } from '@modules/submissions/infrastructure/Judge0HttpClient';
+import { MockJudge0Client } from '@modules/submissions/infrastructure/MockJudge0Client';
+import { PrismaSubmissionRepository } from '@modules/submissions/infrastructure/PrismaSubmissionRepository';
+
 import { container, TOKENS } from '../di/container';
-import { logger } from '@core/logging/Logger';
 container.registerSingleton('Logger', logger);
 
 const isBuilding = process.env.NEXT_PHASE === 'build' || (process.env.NODE_ENV === 'production' && !process.env.VERCEL);
 if (isBuilding && !process.env.DATABASE_URL) {
   process.env.USE_IN_MEMORY = 'true';
+}
+if (!isBuilding && process.env.NODE_ENV !== 'production' && !process.env.DATABASE_URL && process.env.USE_IN_MEMORY !== 'true') {
+  process.env.USE_IN_MEMORY = 'true';
+  logger.info('bootstrap.fallbackInMemory', { reason: 'DATABASE_URL missing in dev, forcing USE_IN_MEMORY=true' });
 }
 const env = loadEnv(!process.env.USE_IN_MEMORY);
 
@@ -73,7 +77,7 @@ if (USE_IN_MEMORY) {
   container.registerFactory(TOKENS.SubmissionRepository, () => new PrismaSubmissionRepository(prisma!));
 }
 
-const useJudge0Mock = process.env.USE_JUDGE0_MOCK === 'true' || !env.JUDGE0_API_URL; // fallback para mock se URL ausente
+const useJudge0Mock = process.env.USE_JUDGE0_MOCK === 'true' || !env.JUDGE0_API_URL;
 if (useJudge0Mock) {
   container.registerSingleton('Judge0Client', new MockJudge0Client());
 } else {

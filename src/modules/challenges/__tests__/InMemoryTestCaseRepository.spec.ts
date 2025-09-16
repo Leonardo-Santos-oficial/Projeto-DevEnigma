@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'vitest';
-import { InMemoryTestCaseRepository } from '../infrastructure/InMemoryTestCaseRepository';
+import { describe, expect, it } from 'vitest';
+
 import { TestCase } from '../domain/TestCase';
+import { InMemoryTestCaseRepository } from '../infrastructure/InMemoryTestCaseRepository';
 
 function make(id: string, challengeId: string) {
   return TestCase.create({ id, input: '1 2', expectedOutput: '3', isHidden: false, challengeId });

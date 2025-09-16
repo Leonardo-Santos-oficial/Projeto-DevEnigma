@@ -1,9 +1,10 @@
+import type { Logger } from '@core/logging/Logger';
+import type { TestCaseRepository } from '@modules/challenges/domain/TestCaseRepository';
+
 import type { EvaluationStrategy } from './EvaluationStrategy';
 import type { Judge0Client } from './Judge0Client';
-import type { SubmissionRepository } from './SubmissionRepository';
-import type { TestCaseRepository } from '@modules/challenges/domain/TestCaseRepository';
-import type { Logger } from '@core/logging/Logger';
 import { Submission } from './Submission';
+import type { SubmissionRepository } from './SubmissionRepository';
 import { SubmissionStatus } from './SubmissionStatus';
 
 export interface CreateSubmissionInput {

@@ -66,7 +66,6 @@ export class Judge0HttpClient implements Judge0Client {
       method: 'POST',
       headers,
       body: JSON.stringify(body),
-      // @ts-ignore: runtime fetch init
     });
     if (!res.ok) {
       const text = await res.text();

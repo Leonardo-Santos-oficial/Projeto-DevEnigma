@@ -1,6 +1,6 @@
-import type { SubmissionRepository } from '../domain/SubmissionRepository';
-import { SubmissionStatus } from '../domain/SubmissionStatus';
 import { Submission } from '../domain/Submission';
+import type { SubmissionRepository } from '../domain/SubmissionRepository';
+import type { SubmissionStatus } from '../domain/SubmissionStatus';
 
 export class InMemorySubmissionRepository implements SubmissionRepository {
   private items: Submission[] = [];

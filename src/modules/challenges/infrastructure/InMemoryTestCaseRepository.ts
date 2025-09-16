@@ -1,5 +1,5 @@
+import type { TestCase } from '../domain/TestCase';
 import type { TestCaseRepository } from '../domain/TestCaseRepository';
-import { TestCase } from '../domain/TestCase';
 
 export class InMemoryTestCaseRepository implements TestCaseRepository {
   private items: TestCase[] = [];
