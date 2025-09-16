@@ -1,0 +1,21 @@
+version: '3.9'
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: devenigma-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: devenigma
+      POSTGRES_PASSWORD: devenigma
+      POSTGRES_DB: devenigma
+    ports:
+      - '5432:5432'
+    volumes:
+      - devenigma_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U devenigma']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+volumes:
+  devenigma_pg_data:

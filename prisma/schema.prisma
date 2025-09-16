@@ -1,0 +1,63 @@
+// Prisma Schema - Derivado do PRD DevEnigma v1.1
+// Foco inicial no domínio de desafios e submissões. Modelos de autenticação
+// serão completados ao integrar NextAuth (User minimalista aqui para FK).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Modelo simplificado de User (será expandido por NextAuth)
+model User {
+  id            String       @id @default(cuid())
+  name          String?
+  email         String?      @unique
+  image         String?
+  createdAt     DateTime     @default(now())
+  submissions   Submission[]
+}
+
+model Challenge {
+  id           String       @id @default(cuid())
+  title        String       @unique
+  description  String
+  starterCode  String
+  difficulty   Difficulty   @default(EASY)
+  language     String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  testCases    TestCase[]
+  submissions  Submission[]
+}
+
+model TestCase {
+  id             String     @id @default(cuid())
+  input          String
+  expectedOutput String
+  isHidden       Boolean    @default(true)
+  challengeId    String
+  challenge      Challenge  @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+}
+
+model Submission {
+  id            String     @id @default(cuid())
+  code          String
+  passed        Boolean
+  executionTime Float?
+  memoryUsage   Int?
+  createdAt     DateTime   @default(now())
+  userId        String
+  user          User       @relation(fields: [userId], references: [id])
+  challengeId   String
+  challenge     Challenge  @relation(fields: [challengeId], references: [id])
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
