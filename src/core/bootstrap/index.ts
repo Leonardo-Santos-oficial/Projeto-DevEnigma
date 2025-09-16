@@ -7,6 +7,12 @@ import { loadEnv } from '@core/config/env';
 import { Challenge } from '@modules/challenges/domain/Challenge';
 import { InMemoryChallengeRepository } from '@modules/challenges/infrastructure/InMemoryChallengeRepository';
 import { PrismaChallengeRepository } from '@modules/challenges/infrastructure/PrismaChallengeRepository';
+import { InMemoryTestCaseRepository } from '@modules/challenges/infrastructure/InMemoryTestCaseRepository';
+import { PrismaTestCaseRepository } from '@modules/challenges/infrastructure/PrismaTestCaseRepository';
+import { InMemorySubmissionRepository } from '@modules/submissions/infrastructure/InMemorySubmissionRepository';
+import { PrismaSubmissionRepository } from '@modules/submissions/infrastructure/PrismaSubmissionRepository';
+import { MockJudge0Client } from '@modules/submissions/infrastructure/MockJudge0Client';
+import { DefaultSubmissionService } from '@modules/submissions/domain/SubmissionService';
 import { container, TOKENS } from '../di/container';
 
 // Durante build estático (NEXT_PHASE=build) se DATABASE_URL não existir, forçamos modo in-memory
@@ -50,6 +56,37 @@ if (USE_IN_MEMORY) {
   container.registerFactory(TOKENS.ChallengeRepository, () => new PrismaChallengeRepository(prisma!));
 }
 
-// Futuro: registrar SubmissionService, Judge0Client, etc.
+// Registro TestCaseRepository
+if (USE_IN_MEMORY) {
+  container.registerSingleton(
+    TOKENS.TestCaseRepository,
+    new InMemoryTestCaseRepository([])
+  );
+} else if (!isBuilding && prisma) {
+  container.registerFactory(TOKENS.TestCaseRepository, () => new PrismaTestCaseRepository(prisma!));
+}
+
+// Registro SubmissionRepository
+if (USE_IN_MEMORY) {
+  container.registerSingleton(
+    TOKENS.SubmissionRepository,
+    new InMemorySubmissionRepository([])
+  );
+} else if (!isBuilding && prisma) {
+  container.registerFactory(TOKENS.SubmissionRepository, () => new PrismaSubmissionRepository(prisma!));
+}
+
+// Judge0Client (mock por enquanto)
+container.registerSingleton('Judge0Client', new MockJudge0Client());
+
+// SubmissionService (depende dos repositórios e Judge0Client)
+container.registerFactory(
+  TOKENS.SubmissionService,
+  () => new DefaultSubmissionService(
+    container.resolve(TOKENS.TestCaseRepository),
+    container.resolve(TOKENS.SubmissionRepository),
+    container.resolve('Judge0Client')
+  )
+);
 
 export {}; // módulo sem exports públicos (side-effects apenas)

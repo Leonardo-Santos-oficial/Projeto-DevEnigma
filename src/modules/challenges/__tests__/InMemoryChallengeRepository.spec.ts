@@ -7,7 +7,7 @@ function makeChallenge(id: string) {
   return Challenge.create({
     id,
     title: `Title ${id}`,
-    description: 'Desc',
+    description: 'Descrição válida de teste',
     starterCode: '// code',
     difficulty: 'EASY',
     language: 'javascript',

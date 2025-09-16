@@ -29,5 +29,7 @@ export const container = new ServiceContainer();
 // Tokens centralizados para evitar strings mágicas (SRP + DRY)
 export const TOKENS = {
   ChallengeRepository: 'ChallengeRepository',
+  TestCaseRepository: 'TestCaseRepository',
+  SubmissionRepository: 'SubmissionRepository',
   SubmissionService: 'SubmissionService'
 } as const;
