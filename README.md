@@ -113,6 +113,66 @@ JUDGE0_API_URL ausente => fallback automático para mock
 - Coleta tempo máximo e memória máxima (baseline). Futuro: métricas agregadas por caso.
 
 ### Resiliência (Futuro)
+## Camada de UI & Design
+
+### Monaco Editor
+Editor de código avançado carregado de forma lazy (SSR desabilitado) para performance e redução de bundle inicial. Mantém o princípio KISS ao encapsular configuração dentro de um componente `CodeEditor` simples.
+
+### Background Matrix
+Animação em canvas (`MatrixRainBackground`) isolada (SRP) e desacoplada do conteúdo. Performance otimizada com:
+- Reuso de `requestAnimationFrame`
+- Limpeza de contexto simples e cálculo leve por frame
+- Responsividade ouvindo resize com debounce implícito (eventos nativos limitados)
+
+### Painel de Submissão
+`SubmissionPanel` reorganizado em grid responsivo, foco acessível e contraste adequado. Os resultados exibem apenas test cases públicos.
+
+### Casos de Teste Ocultos
+- Armazenados com `isHidden=true`
+- São executados e contam para o status final (`passed`) mas não aparecem no payload de resposta.
+- Racional: Prevenir engenharia reversa fácil e incentivar solução generalista.
+
+### Tokens de Design (Futuro)
+Centralização de cores/gradientes e espaçamentos em uma camada de tokens (Tailwind config ou módulo TS) para reforçar DRY e facilitar evolução de tema.
+
+## Hidden Test Cases (Implementação)
+O domínio `TestCase` já inclui `isHidden`. O serviço de submissão:
+1. Recupera todos os casos (públicos + ocultos)
+2. Executa todos (Mock ou Judge0)
+3. Reavalia (strategy) preservando visibilidade
+4. Filtra ocultos da resposta antes de serializar
+
+Contrato de resposta (simplificado):
+```
+{
+  submissionId: string,
+  status: 'PASSED' | 'FAILED',
+  passed: boolean,
+  cases: Array<{ input: string; expected: string; actual: string; passed: boolean }> // só públicos
+}
+```
+
+## Princípios Clean Code Aplicados
+- Nomes descritivos: Entidades (`Challenge`, `TestCase`, `Submission`), serviços (`DefaultSubmissionService`), estratégias claras.
+- Funções pequenas: Cada repositório tem operações focadas (`findByChallengeId`, `saveMany`).
+- DRY: Seeds e bootstrapping centralizados no composition root; lógica de execução encapsulada em `Judge0Client`.
+- KISS: Mock de execução simples (`deriveOutput`) e estratégia de avaliação incremental.
+- Refatoração contínua: Introdução de hidden cases sem quebrar contratos públicos existentes.
+- Testes: Repositórios e serviço de submissão cobertos com casos de aprovação/falha.
+
+## Princípios SOLID Aplicados
+- SRP: Cada classe com foco único (ex: `MockJudge0Client` só simula execução; `MatrixRainBackground` só cuida da animação).
+- OCP: Novas estratégias de avaliação podem ser adicionadas implementando `EvaluationStrategy` sem alterar o serviço.
+- LSP: Implementações de `Judge0Client` (mock vs http) são intercambiáveis sem quebrar o fluxo.
+- ISP: Interfaces enxutas (`TestCaseRepository`, `SubmissionRepository`) expõem apenas métodos necessários.
+- DIP: Serviço depende de abstrações (repositories, strategy, client) injetadas via container.
+
+## Próximos Passos
+- Introduzir tokens de design centralizados
+- Estratégias adicionais (regex normalização, diff tolerante)
+- Execução assíncrona com fila e polling de status
+- Métricas / tracing (OpenTelemetry) opcional
+
 - Retentativas com backoff exponencial em casos de erro transitório 5xx.
 - Circuit breaker simples baseado em janela de falhas.
 

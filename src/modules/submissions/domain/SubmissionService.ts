@@ -18,7 +18,8 @@ export interface SubmissionResultView {
   submissionId: string;
   status: SubmissionStatus;
   passed: boolean;
-  cases: Array<{ input: string; expected: string; actual: string; passed: boolean }>; // ocultar hidden no futuro
+  // Apenas casos NÃO ocultos retornados para feedback ao usuário.
+  cases: Array<{ input: string; expected: string; actual: string; passed: boolean }>; 
 }
 
 export interface SubmissionService {
@@ -62,11 +63,11 @@ export class DefaultSubmissionService implements SubmissionService {
     // Se houver strategy, recalcula passed com base nela (normalização tolerante etc.)
     let allPassed = exec.allPassed;
     if (this.strategy) {
-      // Reavaliar cada caso sob a estratégia fornecendo contexto mínimo
-      const reEvaluated = exec.cases.map(c => ({
-        input: c.input,
-        expectedOutput: c.expectedOutput,
-        isHidden: false // placeholder; futuramente marcar test cases hidden
+      // Reavaliar cada caso sob a estratégia, preservando metadados de visibilidade
+      const reEvaluated = testCases.map((tc, idx) => ({
+        input: tc.input,
+        expectedOutput: tc.expectedOutput,
+        isHidden: tc.isHidden
       }));
       // A strategy atual usa expectedOutput diretamente como "simulatedOutput" pois execução já ocorreu;
       // manteremos compat até Strategy evoluir para receber outputs reais.
@@ -88,11 +89,22 @@ export class DefaultSubmissionService implements SubmissionService {
       cases: exec.cases.length
     });
 
+    // Filtra casos ocultos da resposta (cumpre princípio de não expor critérios completos).
+    const publicCases = testCases
+      .map((tc, idx) => ({ meta: tc, exec: exec.cases[idx] }))
+      .filter(pair => !pair.meta.isHidden)
+      .map(pair => ({
+        input: pair.exec.input,
+        expected: pair.exec.expectedOutput,
+        actual: pair.exec.actualOutput,
+        passed: pair.exec.passed
+      }));
+
     return {
       submissionId: submission.id,
       status: finalStatus,
       passed: allPassed,
-      cases: exec.cases.map(c => ({ input: c.input, expected: c.expectedOutput, actual: c.actualOutput, passed: c.passed }))
+      cases: publicCases
     };
   }
 }

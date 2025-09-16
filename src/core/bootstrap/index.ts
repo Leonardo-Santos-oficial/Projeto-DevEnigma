@@ -8,6 +8,7 @@ import { InMemoryChallengeRepository } from '@modules/challenges/infrastructure/
 import { InMemoryTestCaseRepository } from '@modules/challenges/infrastructure/InMemoryTestCaseRepository';
 import { PrismaChallengeRepository } from '@modules/challenges/infrastructure/PrismaChallengeRepository';
 import { PrismaTestCaseRepository } from '@modules/challenges/infrastructure/PrismaTestCaseRepository';
+import { TestCase } from '@modules/challenges/domain/TestCase';
 import { WhitespaceCaseInsensitiveStrategy } from '@modules/submissions/domain/EvaluationStrategy';
 import { DefaultSubmissionService } from '@modules/submissions/domain/SubmissionService';
 import { InMemorySubmissionRepository } from '@modules/submissions/infrastructure/InMemorySubmissionRepository';
@@ -62,7 +63,25 @@ if (USE_IN_MEMORY) {
 if (USE_IN_MEMORY) {
   container.registerSingleton(
     TOKENS.TestCaseRepository,
-    new InMemoryTestCaseRepository([])
+    // Seed básico de test cases (inclui 1 público e 1 oculto) para o challenge hello-world
+    new InMemoryTestCaseRepository([
+      // Caso público: usado para feedback ao usuário
+      TestCase.create({
+        id: 'tc-hello-visible-1',
+        input: 'ignored',
+        expectedOutput: 'Hello World',
+        isHidden: false,
+        challengeId: 'hello-world'
+      }),
+      // Caso oculto: contribui para a avaliação mas não aparece na resposta
+      TestCase.create({
+        id: 'tc-hello-hidden-1',
+        input: 'any',
+        expectedOutput: 'Hello World',
+        isHidden: true,
+        challengeId: 'hello-world'
+      })
+    ])
   );
 } else if (!isBuilding && prisma) {
   container.registerFactory(TOKENS.TestCaseRepository, () => new PrismaTestCaseRepository(prisma!));
