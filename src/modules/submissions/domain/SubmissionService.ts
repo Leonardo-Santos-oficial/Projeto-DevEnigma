@@ -64,7 +64,7 @@ export class DefaultSubmissionService implements SubmissionService {
     let allPassed = exec.allPassed;
     if (this.strategy) {
       // Reavaliar cada caso sob a estratégia, preservando metadados de visibilidade
-      const reEvaluated = testCases.map((tc, idx) => ({
+      const reEvaluated = testCases.map(tc => ({
         input: tc.input,
         expectedOutput: tc.expectedOutput,
         isHidden: tc.isHidden
@@ -91,7 +91,7 @@ export class DefaultSubmissionService implements SubmissionService {
 
     // Filtra casos ocultos da resposta (cumpre princípio de não expor critérios completos).
     const publicCases = testCases
-      .map((tc, idx) => ({ meta: tc, exec: exec.cases[idx] }))
+      .map((tc, i) => ({ meta: tc, exec: exec.cases[i] }))
       .filter(pair => !pair.meta.isHidden)
       .map(pair => ({
         input: pair.exec.input,

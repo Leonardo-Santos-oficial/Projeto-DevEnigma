@@ -4,11 +4,11 @@ import { PrismaClient } from '@prisma/client';
 import { loadEnv } from '@core/config/env';
 import { logger } from '@core/logging/Logger';
 import { Challenge } from '@modules/challenges/domain/Challenge';
+import { TestCase } from '@modules/challenges/domain/TestCase';
 import { InMemoryChallengeRepository } from '@modules/challenges/infrastructure/InMemoryChallengeRepository';
 import { InMemoryTestCaseRepository } from '@modules/challenges/infrastructure/InMemoryTestCaseRepository';
 import { PrismaChallengeRepository } from '@modules/challenges/infrastructure/PrismaChallengeRepository';
 import { PrismaTestCaseRepository } from '@modules/challenges/infrastructure/PrismaTestCaseRepository';
-import { TestCase } from '@modules/challenges/domain/TestCase';
 import { WhitespaceCaseInsensitiveStrategy } from '@modules/submissions/domain/EvaluationStrategy';
 import { DefaultSubmissionService } from '@modules/submissions/domain/SubmissionService';
 import { InMemorySubmissionRepository } from '@modules/submissions/infrastructure/InMemorySubmissionRepository';
@@ -83,6 +83,7 @@ if (USE_IN_MEMORY) {
       })
     ])
   );
+  logger.info('bootstrap.seed.testCases', { challengeId: 'hello-world', total: 2, hidden: 1 });
 } else if (!isBuilding && prisma) {
   container.registerFactory(TOKENS.TestCaseRepository, () => new PrismaTestCaseRepository(prisma!));
 }
