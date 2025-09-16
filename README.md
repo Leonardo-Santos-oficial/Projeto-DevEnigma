@@ -71,21 +71,128 @@ prisma/
 - Tipagem strict (TS) preservada
 - Commits semânticos (Conventional Commits) validados por Husky + Commitlint
 
-## Fluxo de Submissão (Atual)
-1. Usuário escreve código no editor (client component futuro).
-2. POST `/api/submissions` (a ser implementado) envia: `code`, `challengeId`, `language`.
-3. `DefaultSubmissionService` resolve via DI:
-  - `TestCaseRepository` (busca casos do desafio)
-  - `SubmissionRepository` (persiste submissão PENDING)
-  - `Judge0Client` (atualmente `MockJudge0Client` simula execução)
-4. Serviço avalia resultado, atualiza status para `PASSED` ou `FAILED` e retorna visão simplificada.
-5. Futuro: execução assíncrona + polling / websockets.
+## Fluxo de Submissão (Atualizado)
+1. Usuário escreve código no `SubmissionPanel` (textarea – preparado para Monaco).
+2. POST `/api/submissions` envia: `code`, `challengeId`, `language`.
+3. `DefaultSubmissionService` (SRP: orquestra fluxo) via DI resolve dependências:
+   - `TestCaseRepository` (carrega casos – futuramente filtrando hidden do output público)
+   - `SubmissionRepository` (persiste submissão inicial com status PENDING)
+   - `Judge0Client` (`MockJudge0Client` ou `Judge0HttpClient` real)
+   - `EvaluationStrategy` (`WhitespaceCaseInsensitiveStrategy` tolera diferenças de espaço / case)
+   - `Logger` (eventos estruturados)
+4. Execução: Judge0 (mock ou HTTP) roda cada test case e retorna outputs.
+5. Strategy (se presente) reavalia tolerância e define `passed` final.
+6. Status é atualizado para `PASSED` ou `FAILED` + métricas runtime (tempo/memória quando disponível).
+7. Resposta simplificada retorna casos (apenas públicos), status e indicador `passed`.
+8. Futuro: fila assíncrona (job queue) retornando imediatamente `PENDING` + canal de atualização (SSE/WebSocket).
 
-## Judge0 Abstração
-- Interface `Judge0Client` isola detalhes HTTP.
-- Implementação atual: mock determinístico (simula outputs).
-- Próximo: `Judge0HttpClient` usando variáveis `JUDGE0_URL`, `JUDGE0_API_KEY`.
+### Contrato Simplificado
+Input: `{ code, challengeId, language }`
+Output: `{ submissionId, status, passed, cases: [{ input, expected, actual, passed }] }`
 
+### Possíveis Evoluções
+- Casos ocultos (não retornados no array, apenas contam para o `passed`).
+- Penalidades de performance ou memória influenciando score.
+- Execução paralela (Promise.all) no Judge0 real com limitação de taxa.
+
+## Integração Judge0
+Camada de execução isolada por `Judge0Client` para cumprir DIP.
+
+Implementações:
+- `MockJudge0Client`: determinística, rápida, sem dependências externas (ideal para dev/testes locais e CI).
+- `Judge0HttpClient`: usa API pública/privada Judge0.
+
+Seleção em runtime:
+```
+USE_JUDGE0_MOCK=true  => força mock
+JUDGE0_API_URL ausente => fallback automático para mock
+```
+
+### Estratégia de Execução Atual
+- Execução sequencial de test cases (mais simples para logging e isolação de falhas).
+- Coleta tempo máximo e memória máxima (baseline). Futuro: métricas agregadas por caso.
+
+### Resiliência (Futuro)
+- Retentativas com backoff exponencial em casos de erro transitório 5xx.
+- Circuit breaker simples baseado em janela de falhas.
+
+## Logging Estruturado
+Interface `Logger` abstrai emissões (`info`, `error`, `debug`). Implementação atual: `ConsoleJsonLogger` (saída JSON flat, fácil ingestão em ferramentas futuras).
+
+Eventos principais:
+| Evento | Contexto |
+|--------|----------|
+| `submission.start` | challengeId, language |
+| `submission.finish` | submissionId, status, durationMs, passed, cases |
+| `bootstrap.fallbackInMemory` | reason (quando força modo in-memory) |
+
+Benefícios:
+- Observabilidade sem dependência de vendor.
+- Correlação futura via inclusão de requestId / userId.
+
+Backlog Logging:
+- Nível `debug` configurável por ENV.
+- Export para provider (OTEL / Logtail / Loki) via adapter.
+
+## UI Submission Panel
+Componentes:
+- `useSubmission` (hook): gerencia estado (code, loading, result, error).
+- `SubmissionPanel`: layout imersivo (área de código + resultados) minimalista, preparado para plugar editor Monaco.
+
+Próximos upgrades UI:
+- Substituir textarea por Monaco Editor (lazy dynamic import).
+- Destaque de linhas com erro (quando output divergir e tivermos diffs).
+- Acessibilidade: aria-live para status e foco gerenciado pós-submissão.
+
+## Convenções de Imports
+Regra ESLint `import/order` configurada com:
+```
+groups: [builtin, external, internal, parent, sibling, index]
+internal-regex: ^(@core|@modules)/
+newlines-between: always
+alphabetize: asc
+```
+Padrões:
+- Todos os imports de tipos: `import type { X } from '...'`.
+- Separação clara entre grupos com 1 linha em branco.
+- Sem linhas em branco dentro do mesmo grupo.
+
+## Fallback In-Memory
+Para acelerar DX e evitar crashes quando `DATABASE_URL` não está definido:
+- Em build de produção sem DATABASE_URL: força `USE_IN_MEMORY=true`.
+- Em dev (`NODE_ENV !== production`) sem DATABASE_URL: aplica fallback e loga `bootstrap.fallbackInMemory`.
+- Permite rodar `npm run dev` instantaneamente sem provisionar Postgres.
+
+## Princípios Clean Code Aplicados
+- Nomes descritivos (`DefaultSubmissionService`, `WhitespaceCaseInsensitiveStrategy`).
+- Funções curtas focadas: métodos de repositório e serviço mantêm uma responsabilidade.
+- DRY: lógica de criação centralizada em métodos `create` das entidades.
+- Comentários mínimos: apenas quando esclarecem decisões (ex: nota sobre futura execução assíncrona).
+- Código expressivo > comentários redundantes.
+
+## Princípios SOLID na Prática
+| Princípio | Aplicação |
+|-----------|-----------|
+| SRP | Cada repositório só persiste/recupera seu agregado; serviço de submissão apenas orquestra fluxo. |
+| OCP | Novas estratégias de avaliação ou storage (ex: RedisSubmissionRepository) adicionadas sem alterar clientes existentes. |
+| LSP | Implementações de `Judge0Client` e repositórios podem substituir-se sem quebrar código consumidor. |
+| ISP | Interfaces enxutas (`TestCaseRepository`, `SubmissionRepository`, `Judge0Client`) não forçam métodos extras. |
+| DIP | Serviços dependem de abstrações registradas no container, não de implementações concretas. |
+
+## Próximas Extensões (Sugestões)
+- Monaco Editor + diff interativo.
+- Test cases ocultos (flag `isHidden` suprimindo retorno no payload).
+- Fila assíncrona (BullMQ / Cloud Tasks) para execução fora do request.
+- Métricas de performance (p95 tempo de execução por desafio).
+- Scoring e ranking (ponderando velocidade / tentativas).
+- Estratégias adicionais (normalização por regex, análise semântica futura).
+
+## Guia Rápido de Contribuição Clean Code
+1. Antes de adicionar comentário, tente renomear algo para ficar autoexplicativo.
+2. Prefira compor funções pequenas ao invés de adicionar flags booleanas internas.
+3. Evite `any`; se inevitável, isole e documente com TODO para remoção.
+4. Não duplique schema/entidade – reutilize factories.
+5. Escreva teste cobrindo caso feliz + 1 edge case mínimo.
 ## Design Patterns Empregados
 - Repository (Challenge, TestCase, Submission)
 - Strategy (avaliation futura / pluggable evaluation)
