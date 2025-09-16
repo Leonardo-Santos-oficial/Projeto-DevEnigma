@@ -4,6 +4,8 @@ import { TestCase } from '@modules/challenges/domain/TestCase';
 import { InMemorySubmissionRepository } from '../infrastructure/InMemorySubmissionRepository';
 import { MockJudge0Client } from '../infrastructure/MockJudge0Client';
 import { DefaultSubmissionService } from '../domain/SubmissionService';
+import { WhitespaceCaseInsensitiveStrategy } from '../domain/EvaluationStrategy';
+import { logger } from '@core/logging/Logger';
 import { SubmissionStatus } from '../domain/SubmissionStatus';
 
 function makeTestCase(id: string, input: string, expected: string, challengeId: string) {
@@ -18,7 +20,7 @@ describe('DefaultSubmissionService', () => {
     ]);
     const submissionRepo = new InMemorySubmissionRepository();
     const judge0 = new MockJudge0Client();
-    const service = new DefaultSubmissionService(testCaseRepo, submissionRepo, judge0);
+  const service = new DefaultSubmissionService(testCaseRepo, submissionRepo, judge0, new WhitespaceCaseInsensitiveStrategy(), logger);
 
     const result = await service.submit({
       code: 'console.log("Hello World")',
@@ -39,7 +41,7 @@ describe('DefaultSubmissionService', () => {
     ]);
     const submissionRepo = new InMemorySubmissionRepository();
     const judge0 = new MockJudge0Client();
-    const service = new DefaultSubmissionService(testCaseRepo, submissionRepo, judge0);
+  const service = new DefaultSubmissionService(testCaseRepo, submissionRepo, judge0, new WhitespaceCaseInsensitiveStrategy(), logger);
 
     const result = await service.submit({
       code: 'console.log("Different")',

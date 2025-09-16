@@ -13,6 +13,7 @@ const envSchema = z.object({
   GITHUB_ID: z.string().optional(),
   GITHUB_SECRET: z.string().optional(),
   USE_IN_MEMORY: z.string().optional(),
+  USE_JUDGE0_MOCK: z.string().optional(),
   JUDGE0_API_URL: z.string().optional(),
   JUDGE0_API_KEY: z.string().optional()
 });

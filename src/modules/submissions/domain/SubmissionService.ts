@@ -2,6 +2,7 @@ import type { EvaluationStrategy } from './EvaluationStrategy';
 import type { Judge0Client } from './Judge0Client';
 import type { SubmissionRepository } from './SubmissionRepository';
 import type { TestCaseRepository } from '@modules/challenges/domain/TestCaseRepository';
+import type { Logger } from '@core/logging/Logger';
 import { Submission } from './Submission';
 import { SubmissionStatus } from './SubmissionStatus';
 
@@ -29,11 +30,14 @@ export class DefaultSubmissionService implements SubmissionService {
     private readonly testCaseRepo: TestCaseRepository,
     private readonly submissionRepo: SubmissionRepository,
     private readonly judge0: Judge0Client,
-    private readonly strategy?: EvaluationStrategy // placeholder para futuras estratégias
+    private readonly strategy: EvaluationStrategy | undefined,
+    private readonly logger: Logger
   ) {}
 
   async submit(input: CreateSubmissionInput): Promise<SubmissionResultView> {
-    const testCases = await this.testCaseRepo.findByChallengeId(input.challengeId);
+  const start = Date.now();
+  this.logger.info('submission.start', { challengeId: input.challengeId, language: input.language });
+  const testCases = await this.testCaseRepo.findByChallengeId(input.challengeId);
     if (testCases.length === 0) throw new Error('Nenhum caso de teste para o desafio.');
 
     const submission = Submission.create({
@@ -54,13 +58,39 @@ export class DefaultSubmissionService implements SubmissionService {
       testCases: testCases.map(tc => ({ input: tc.input, expectedOutput: tc.expectedOutput }))
     });
 
-    const finalStatus = exec.allPassed ? SubmissionStatus.PASSED : SubmissionStatus.FAILED;
-    await this.submissionRepo.updateStatus(submission.id, finalStatus, exec.allPassed, exec.executionTimeMs, exec.memoryKb);
+    // Se houver strategy, recalcula passed com base nela (normalização tolerante etc.)
+    let allPassed = exec.allPassed;
+    if (this.strategy) {
+      // Reavaliar cada caso sob a estratégia fornecendo contexto mínimo
+      const reEvaluated = exec.cases.map(c => ({
+        input: c.input,
+        expectedOutput: c.expectedOutput,
+        isHidden: false // placeholder; futuramente marcar test cases hidden
+      }));
+      // A strategy atual usa expectedOutput diretamente como "simulatedOutput" pois execução já ocorreu;
+      // manteremos compat até Strategy evoluir para receber outputs reais.
+      const stratResult = await this.strategy.evaluate({
+        code: input.code,
+        language: input.language,
+        testCases: reEvaluated
+      });
+      allPassed = stratResult.passed && exec.cases.every(c => c.passed);
+    }
+
+    const finalStatus = allPassed ? SubmissionStatus.PASSED : SubmissionStatus.FAILED;
+    await this.submissionRepo.updateStatus(submission.id, finalStatus, allPassed, exec.executionTimeMs, exec.memoryKb);
+    this.logger.info('submission.finish', {
+      submissionId: submission.id,
+      status: finalStatus,
+      durationMs: Date.now() - start,
+      passed: allPassed,
+      cases: exec.cases.length
+    });
 
     return {
       submissionId: submission.id,
       status: finalStatus,
-      passed: exec.allPassed,
+      passed: allPassed,
       cases: exec.cases.map(c => ({ input: c.input, expected: c.expectedOutput, actual: c.actualOutput, passed: c.passed }))
     };
   }
