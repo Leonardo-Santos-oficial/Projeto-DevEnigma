@@ -317,6 +317,20 @@ npm run dev:mem   # modo in-memory sem DB (flag USE_IN_MEMORY=true)
 - Logger estruturado (JSON) com níveis: info, warn, error.
 - Métricas básicas: latência de avaliação, taxa de sucesso.
 
+### Nota sobre Warning `cz-shortcut-listen`
+Se durante o desenvolvimento aparecer no console do browser:
+```
+Warning: Extra attributes from the server: cz-shortcut-listen
+```
+Isso significa que, após o SSR, o atributo `cz-shortcut-listen` foi inserido no `<body>` apenas no client antes/ao longo da hidratação. Normalmente a causa é uma extensão de navegador que adiciona listeners globais de atalho ou um script externo de produtividade. Como não fazemos mutações manuais no `<body>` no código-fonte, o warning é inofensivo.
+
+Checklist de diagnóstico rápido:
+1. Abrir em janela anônima: se sumir, é extensão.
+2. Testar em outro navegador: persistindo em todos os navegadores, investigar scripts custom.
+3. Garantir que nenhuma lib interna executa mutação do DOM fora de `useEffect`.
+
+Mitigação (não recomendada salvo necessidade): criar componente client que remove o atributo pós-hidratação. Preferimos documentar para manter o código simples (KISS / SRP) e evitar lógica acoplada ao layout global.
+
 ## Roadmap Curto Prazo
 - [ ] Endpoint `/api/submissions`
 - [ ] UI de submissão (botão + feedback)

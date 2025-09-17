@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 
 // --- Types & Config (SRP: apenas declaração de contrato) ---
-interface MatrixRainProps {
+export interface MatrixRainProps {
   opacity?: number;           // Opacidade base aplicada por caractere
   fontSize?: number;          // Tamanho base da fonte em px
   density?: number;           // Fator de densidade (1 = padrão, >1 mais colunas)
@@ -20,7 +20,7 @@ interface DropState {
   speed: number;  // linhas por frame
 }
 
-const DEFAULT_CONFIG: Required<Omit<MatrixRainProps, 'speedRange' | 'variant' | 'intensity'>> & { speedRange: [number, number], variant: 'default', intensity: 'medium' } = {
+export const DEFAULT_MATRIX_CONFIG: Required<Omit<MatrixRainProps, 'speedRange' | 'variant' | 'intensity'>> & { speedRange: [number, number], variant: 'default', intensity: 'medium' } = {
   opacity: 0.6,
   fontSize: 14,
   density: 1,
@@ -55,30 +55,29 @@ function usePrefersReducedMotion(): boolean {
  * respeito à preferência de movimento reduzido e configurável via props.
  * Clean Code: funções pequenas, nomes explícitos. SOLID: SRP (desenhar efeito), OCP (config via props), DIP implícita (sem dependências fortes externas).
  */
+export function computeMatrixConfig(input: MatrixRainProps): ReturnType<typeof Object.assign> {
+  const merged: any = { ...DEFAULT_MATRIX_CONFIG, ...input }; // tipo interno simples para composição
+  switch (merged.intensity) {
+    case 'low':
+      merged.opacity = Math.min(merged.opacity, 0.35);
+      merged.density = Math.min(merged.density, 0.7);
+      break;
+    case 'high':
+      merged.opacity = Math.max(merged.opacity, 0.75);
+      merged.density = merged.density * 1.25;
+      break;
+  }
+  if (merged.variant === 'editor') {
+    merged.opacity = 0.5;
+    merged.density = 0.9;
+    merged.fadeAlpha = 0.07;
+    merged.glow = false;
+  }
+  return merged;
+}
+
 export function MatrixRainBackground(props: MatrixRainProps) {
-  const cfg = useMemo(() => {
-    const merged = { ...DEFAULT_CONFIG, ...props };
-    // Ajustes por intensidade
-    switch (merged.intensity) {
-      case 'low':
-        merged.opacity = Math.min(merged.opacity, 0.35);
-        merged.density = Math.min(merged.density, 0.7);
-        break;
-      case 'high':
-        merged.opacity = Math.max(merged.opacity, 0.75);
-        merged.density = merged.density * 1.25;
-        break;
-    }
-    // Variante editor: ainda mais sutil e menos interferente
-    if (merged.variant === 'editor') {
-      // Variante editor: precisa ser perceptível mas não distrair do código.
-      merged.opacity = 0.5;             // mais visível
-      merged.density = 0.9;             // mais colunas
-      merged.fadeAlpha = 0.07;          // um pouco mais de fade para não acumular demais
-      merged.glow = false;              // sem glow para não poluir leitura
-    }
-    return merged;
-  }, [props]);
+  const cfg = useMemo(() => computeMatrixConfig(props), [props]);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animationRef = useRef<number | null>(null);
   const dropsRef = useRef<DropState[]>([]);
@@ -151,7 +150,7 @@ export function MatrixRainBackground(props: MatrixRainProps) {
         ctx.fillStyle = isHead ? cfg.accentColor : cfg.color;
         if (cfg.glow) {
           if (isHead) {
-            ctx.shadowColor = ctx.fillStyle;
+            ctx.shadowColor = typeof ctx.fillStyle === 'string' ? ctx.fillStyle : cfg.accentColor;
             ctx.shadowBlur = 8;
           } else {
             ctx.shadowBlur = 0;
