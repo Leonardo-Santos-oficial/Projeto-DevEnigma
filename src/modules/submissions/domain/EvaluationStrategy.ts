@@ -32,11 +32,18 @@ export class ExactMatchStrategy implements EvaluationStrategy {
 export class WhitespaceCaseInsensitiveStrategy implements EvaluationStrategy {
   readonly name = 'WhitespaceCaseInsensitive';
   async evaluate(context: EvaluationContext): Promise<EvaluationResult> {
-    const normalize = (s: string) => s.replace(/\r/g, '').trim().replace(/\s+/g, ' ').toLowerCase();
+    const normalize = (s: string) => s
+      .replace(/\r/g, '')        // remove CR
+      .split('\n')               // preserva separação lógica por linha
+      .map(line => line.trim().replace(/\s+/g, ' ')) // compacta espaços internos
+      .join('\n')
+      .toLowerCase();
+
+    // FUTURO: receber outputs reais (context.rawOutputs?) – hoje só temos expected.
     for (const tc of context.testCases) {
-      const simulatedOutput = tc.expectedOutput;
-      if (normalize(simulatedOutput) !== normalize(tc.expectedOutput)) {
-        return { passed: false, failedCase: { input: tc.input, expectedOutput: tc.expectedOutput, received: simulatedOutput } };
+      const received = tc.expectedOutput; // placeholder (mock). Quando houver execução real, substituir.
+      if (normalize(received) !== normalize(tc.expectedOutput)) {
+        return { passed: false, failedCase: { input: tc.input, expectedOutput: tc.expectedOutput, received } };
       }
     }
     return { passed: true };

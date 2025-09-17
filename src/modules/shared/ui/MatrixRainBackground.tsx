@@ -135,8 +135,20 @@ export function MatrixRainBackground(props: MatrixRainProps) {
       return () => window.removeEventListener('resize', onResize);
     }
 
+    let paused = false;
+    function onVisibility() {
+      paused = document.hidden;
+      if (!paused && !animationRef.current) {
+        animationRef.current = requestAnimationFrame(draw);
+      }
+    }
+    document.addEventListener('visibilitychange', onVisibility);
     function draw(ts: number) {
       if (!canvas || !ctx) return;
+      if (paused) {
+        animationRef.current = requestAnimationFrame(draw);
+        return;
+      }
       const delta = ts - lastTs;
       lastTs = ts;
       ctx.fillStyle = `rgba(0,0,0,${cfg.fadeAlpha})`;
@@ -171,6 +183,7 @@ export function MatrixRainBackground(props: MatrixRainProps) {
 
     return () => {
       window.removeEventListener('resize', onResize);
+      document.removeEventListener('visibilitychange', onVisibility);
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- cfg é estável via useMemo e funções via useCallback
