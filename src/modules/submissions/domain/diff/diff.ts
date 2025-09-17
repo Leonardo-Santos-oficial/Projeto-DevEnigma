@@ -14,68 +14,35 @@ export interface LineDiffResult {
 // Myers diff (O(ND)) simplified for line diff; optimized for short outputs.
 export function diffLines(a: string, b: string): LineDiffResult {
   if (a === b) return { segments: a === '' ? [] : a.split(/\n/).map(l => ({ type: 'context' as const, value: l })), hasChanges: false };
-  const aLines = a.replace(/\r/g, '').split(/\n/);
-  const bLines = b.replace(/\r/g, '').split(/\n/);
-  const N = aLines.length; const M = bLines.length;
-  const max = N + M;
-  const v: Record<number, number> = { 1: 0 };
-  const trace: Record<number, Record<number, number>> = {};
-  for (let d = 0; d <= max; d++) {
-    trace[d] = { ...v };
-    for (let k = -d; k <= d; k += 2) {
-      let x: number;
-      if (k === -d || (k !== d && v[k - 1] < v[k + 1])) {
-        x = v[k + 1];
-      } else {
-        x = v[k - 1] + 1;
-      }
-      let y = x - k;
-      while (x < N && y < M && aLines[x] === bLines[y]) { x++; y++; }
-      v[k] = x;
-      if (x >= N && y >= M) {
-        return buildSegments(aLines, bLines, trace, d, k);
-      }
+  // Split lines; treat truly empty string as zero lines (avoid phantom empty line)
+  const aLines = a === '' ? [] : a.replace(/\r/g, '').split(/\n/);
+  const bLines = b === '' ? [] : b.replace(/\r/g, '').split(/\n/);
+  const m = aLines.length; const n = bLines.length;
+  // LCS table
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (aLines[i - 1] === bLines[j - 1]) dp[i][j] = dp[i - 1][j - 1] + 1;
+      else dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
     }
   }
-  return { segments: [], hasChanges: true }; // unreachable ideally
-}
-
-function buildSegments(aLines: string[], bLines: string[], trace: Record<number, Record<number, number>>, d: number, k: number): LineDiffResult {
+  // Backtrack to build segments
   const segments: DiffSegment[] = [];
-  let x = aLines.length; let y = bLines.length;
-  for (let depth = d; depth > 0; depth--) {
-    const v = trace[depth];
-    let prevK: number;
-    if (k === -depth || (k !== depth && v[k - 1] < v[k + 1])) {
-      prevK = k + 1; // insertion
+  let i = m; let j = n;
+  while (i > 0 && j > 0) {
+    if (aLines[i - 1] === bLines[j - 1]) {
+      segments.push({ type: 'context', value: aLines[i - 1] });
+      i--; j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      segments.push({ type: 'del', value: aLines[i - 1] });
+      i--;
     } else {
-      prevK = k - 1; // deletion
+      segments.push({ type: 'add', value: bLines[j - 1] });
+      j--;
     }
-    const prevX = v[prevK];
-    const prevY = prevX - prevK;
-    while (x > prevX && y > prevY) {
-      // matching line
-      segments.push({ type: 'context', value: aLines[x - 1] });
-      x--; y--;
-    }
-    if (x === prevX) {
-      // insertion (add bLines[prevY])
-      segments.push({ type: 'add', value: bLines[prevY] });
-    } else {
-      // deletion (del aLines[prevX])
-      segments.push({ type: 'del', value: aLines[prevX] });
-    }
-    k = prevK;
   }
-  // leading context
-  while (x > 0 && y > 0) {
-    segments.push({ type: 'context', value: aLines[x - 1] });
-    x--; y--;
-  }
-  // remaining deletions
-  while (x > 0) { segments.push({ type: 'del', value: aLines[--x] }); }
-  // remaining insertions
-  while (y > 0) { segments.push({ type: 'add', value: bLines[--y] }); }
+  while (i > 0) { segments.push({ type: 'del', value: aLines[--i] }); }
+  while (j > 0) { segments.push({ type: 'add', value: bLines[--j] }); }
   segments.reverse();
   const hasChanges = segments.some(s => s.type !== 'context');
   return { segments, hasChanges };
