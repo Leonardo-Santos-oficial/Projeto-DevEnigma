@@ -19,6 +19,7 @@ model User {
   image         String?
   createdAt     DateTime     @default(now())
   submissions   Submission[]
+  profile       Profile?
 }
 
 model Challenge {
@@ -54,6 +55,19 @@ model Submission {
   user          User       @relation(fields: [userId], references: [id])
   challengeId   String
   challenge     Challenge  @relation(fields: [challengeId], references: [id])
+}
+
+// Profile agregado para ranking e estatísticas de usuário
+model Profile {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id])
+  attempts   Int      @default(0)
+  solved     Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([solved, attempts])
 }
 
 enum Difficulty {

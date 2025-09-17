@@ -16,6 +16,7 @@ import { Judge0HttpClient } from '@modules/submissions/infrastructure/Judge0Http
 import { MockJudge0Client } from '@modules/submissions/infrastructure/MockJudge0Client';
 import { PrismaSubmissionRepository } from '@modules/submissions/infrastructure/PrismaSubmissionRepository';
 import { InMemoryProfileRepository } from '@modules/profiles/infrastructure/InMemoryProfileRepository';
+import { PrismaProfileRepository } from '@modules/profiles/infrastructure/PrismaProfileRepository';
 
 import { container, TOKENS } from '../di/container';
 container.registerSingleton('Logger', logger);
@@ -101,7 +102,7 @@ if (USE_IN_MEMORY) {
   );
 } else if (!isBuilding && prisma) {
   container.registerFactory(TOKENS.SubmissionRepository, () => new PrismaSubmissionRepository(prisma!));
-  // TODO: adicionar implementação Prisma de Profile futuramente
+  container.registerFactory(TOKENS.ProfileRepository, () => new PrismaProfileRepository(prisma!));
 }
 
 const useJudge0Mock = process.env.USE_JUDGE0_MOCK === 'true' || !env.JUDGE0_API_URL;

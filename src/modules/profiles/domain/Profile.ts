@@ -46,4 +46,8 @@ export class Profile implements ProfileProps {
     this.lastSubmissionAt = new Date();
     this.updatedAt = new Date();
   }
+
+  static restore(props: ProfileProps): Profile {
+    return new Profile(props);
+  }
 }
