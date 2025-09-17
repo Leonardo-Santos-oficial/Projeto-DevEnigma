@@ -10,10 +10,10 @@ export async function GET() {
   const data = profiles.map((p: any, idx: number) => ({
     position: idx + 1,
     userId: p.id,
-    username: p.username,
+    username: p.username || 'Anon',
     solved: p.solved,
     attempts: p.attempts,
-    efficiency: p.solved === 0 ? 0 : +(p.solved / p.attempts).toFixed(2),
+    efficiency: p.attempts === 0 ? 0 : +(p.solved / p.attempts).toFixed(2),
   }));
   return NextResponse.json({ ranking: data, updatedAt: new Date().toISOString() });
 }
