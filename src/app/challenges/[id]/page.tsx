@@ -19,9 +19,9 @@ export default async function ChallengePage({ params }: ChallengePageProps) {
     <main className="relative flex flex-col gap-4 px-6 py-5 h-[calc(100vh-0px)]">
       <div className="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-6">
         <div className="flex-1">
-          <h1 className="text-3xl font-semibold tracking-tight bg-gradient-to-r from-emerald-400 to-emerald-200 bg-clip-text text-transparent">
-            {challenge.title}
-          </h1>
+              <h1 className="text-3xl font-semibold tracking-tight gradient-accent-text">
+                {challenge.title}
+              </h1>
           <p className="mt-1 text-sm text-neutral-300 max-w-2xl leading-relaxed">
             {challenge.description}
           </p>

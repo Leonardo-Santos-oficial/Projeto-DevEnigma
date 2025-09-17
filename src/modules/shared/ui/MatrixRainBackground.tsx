@@ -11,6 +11,8 @@ interface MatrixRainProps {
   accentColor?: string;       // Cor acentuada para alguns caracteres
   speedRange?: [number, number]; // Intervalo de velocidade (linhas por tick)
   glow?: boolean;             // Ativar brilho na "cabeça" da coluna
+  variant?: 'default' | 'editor'; // Variante de estilo (editor = mais sutil)
+  intensity?: 'low' | 'medium' | 'high'; // Ajuste rápido de densidade/opacidade
 }
 
 interface DropState {
@@ -18,7 +20,7 @@ interface DropState {
   speed: number;  // linhas por frame
 }
 
-const DEFAULT_CONFIG: Required<Omit<MatrixRainProps, 'speedRange'>> & { speedRange: [number, number] } = {
+const DEFAULT_CONFIG: Required<Omit<MatrixRainProps, 'speedRange' | 'variant' | 'intensity'>> & { speedRange: [number, number], variant: 'default', intensity: 'medium' } = {
   opacity: 0.6,
   fontSize: 14,
   density: 1,
@@ -26,7 +28,9 @@ const DEFAULT_CONFIG: Required<Omit<MatrixRainProps, 'speedRange'>> & { speedRan
   color: '#10b981',      // emerald-500
   accentColor: '#34d399', // emerald-400
   speedRange: [0.75, 1.75],
-  glow: true
+  glow: true,
+  variant: 'default',
+  intensity: 'medium'
 };
 
 // Conjunto de caracteres (aberto para extensão sem modificar draw loop => OCP)
@@ -52,7 +56,29 @@ function usePrefersReducedMotion(): boolean {
  * Clean Code: funções pequenas, nomes explícitos. SOLID: SRP (desenhar efeito), OCP (config via props), DIP implícita (sem dependências fortes externas).
  */
 export function MatrixRainBackground(props: MatrixRainProps) {
-  const cfg = useMemo(() => ({ ...DEFAULT_CONFIG, ...props }), [props]);
+  const cfg = useMemo(() => {
+    const merged = { ...DEFAULT_CONFIG, ...props };
+    // Ajustes por intensidade
+    switch (merged.intensity) {
+      case 'low':
+        merged.opacity = Math.min(merged.opacity, 0.35);
+        merged.density = Math.min(merged.density, 0.7);
+        break;
+      case 'high':
+        merged.opacity = Math.max(merged.opacity, 0.75);
+        merged.density = merged.density * 1.25;
+        break;
+    }
+    // Variante editor: ainda mais sutil e menos interferente
+    if (merged.variant === 'editor') {
+      // Variante editor: precisa ser perceptível mas não distrair do código.
+      merged.opacity = 0.5;             // mais visível
+      merged.density = 0.9;             // mais colunas
+      merged.fadeAlpha = 0.07;          // um pouco mais de fade para não acumular demais
+      merged.glow = false;              // sem glow para não poluir leitura
+    }
+    return merged;
+  }, [props]);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animationRef = useRef<number | null>(null);
   const dropsRef = useRef<DropState[]>([]);
@@ -152,9 +178,12 @@ export function MatrixRainBackground(props: MatrixRainProps) {
   }, [cfg, setupCanvas, reducedMotion, randomBetween]);
 
   return (
-    <div className="pointer-events-none fixed inset-0 -z-10" aria-hidden="true">
+    <div className="pointer-events-none fixed inset-0 z-0" aria-hidden="true">
       <canvas ref={canvasRef} className="w-full h-full" />
-      <div className="absolute inset-0 bg-gradient-to-b from-neutral-900/10 via-transparent to-neutral-950" />
+      {/* Overlay adaptativa conforme variante */}
+      {cfg.variant === 'editor' ? null : (
+        <div className="absolute inset-0 bg-gradient-to-b from-neutral-900/10 via-transparent to-neutral-950" />
+      )}
     </div>
   );
 }

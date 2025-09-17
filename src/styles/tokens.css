@@ -1,0 +1,59 @@
+/* Design Tokens CSS Variables
+   Clean Code: nomes claros, agrupados por tema.
+   Pode ser estendido sem quebrar consumidores (OCP). */
+:root {
+  /* Cores base (modo dark principal) */
+  --color-bg: #0a0f0d; /* near black neutro */
+  --color-bg-alt: #111816;
+  --color-surface: #1a2421;
+  --color-border: #2d3a37;
+  --color-text: #f1f5f4;
+  --color-text-muted: #94a39f;
+  --color-accent: #10b981; /* emerald 500 */
+  --color-accent-soft: #34d399; /* emerald 400 */
+  --color-danger: #dc2626; /* red-600 */
+  --color-success: #16a34a; /* green-600 */
+
+  /* Gradientes */
+  --gradient-accent: linear-gradient(90deg, #10b981 0%, #34d399 45%, #6ee7b7 100%);
+
+  /* Raios */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+
+  /* Tipografia / efeitos */
+  --shadow-soft: 0 1px 2px 0 rgba(0,0,0,0.4);
+  --shadow-focus: 0 0 0 2px #10b98166;
+}
+
+/* Utilitários mínimos (evita duplicação inline) */
+.gradient-accent-text {
+  background: var(--gradient-accent);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.focus-ring-accent:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+.surface-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+/* Escopo de prefers-color-scheme pronto para futura variante light */
+@media (prefers-color-scheme: light) {
+  :root {
+    --color-bg: #f7faf9;
+    --color-bg-alt: #eef3f1;
+    --color-surface: #ffffff;
+    --color-border: #d6e0dc;
+    --color-text: #1c2724;
+    --color-text-muted: #5a6b66;
+  }
+}

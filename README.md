@@ -124,6 +124,12 @@ Animação em canvas (`MatrixRainBackground`) isolada (SRP) e desacoplada do con
 - Limpeza de contexto simples e cálculo leve por frame
 - Responsividade ouvindo resize com debounce implícito (eventos nativos limitados)
 
+Variantes:
+| Variante | Uso | Ajustes |
+|----------|-----|---------|
+| `default` | Landing / páginas gerais | Opacidade moderada, glow ativo |
+| `editor`  | Páginas de desafio / código | Menor densidade, sem glow, overlay escuro translúcido para não competir com o código |
+
 ### Painel de Submissão
 `SubmissionPanel` reorganizado em grid responsivo, foco acessível e contraste adequado. Os resultados exibem apenas test cases públicos.
 
@@ -132,8 +138,28 @@ Animação em canvas (`MatrixRainBackground`) isolada (SRP) e desacoplada do con
 - São executados e contam para o status final (`passed`) mas não aparecem no payload de resposta.
 - Racional: Prevenir engenharia reversa fácil e incentivar solução generalista.
 
-### Tokens de Design (Futuro)
-Centralização de cores/gradientes e espaçamentos em uma camada de tokens (Tailwind config ou módulo TS) para reforçar DRY e facilitar evolução de tema.
+### Design Tokens
+Tokens implementados para garantir consistência visual e facilitar theming. Dois níveis:
+
+1. CSS Variables (`src/styles/tokens.css`): camada base consumível também por futuros temas (ex: modo light já preparado via `prefers-color-scheme`).
+2. Módulo TypeScript (`src/styles/tokens.ts`): fornece objeto tipado (`tokens`) para uso em lógica/JSX (ex: inline styles, geração de temas dinâmicos ou plugin Tailwind futuro).
+
+Principais variáveis:
+```
+--color-bg / --color-bg-alt / --color-surface / --color-border
+--color-text / --color-text-muted
+--color-accent / --color-accent-soft / --color-danger / --color-success
+--gradient-accent
+--radius-sm|md|lg
+--shadow-soft|focus
+```
+Utilitários adicionados:
+```
+.gradient-accent-text  (aplica gradiente a headings)
+.surface-card          (cartões padronizados)
+.focus-ring-accent     (anel de foco acessível)
+```
+Refatorações aplicadas: títulos de páginas de desafios e listagem agora usam `.gradient-accent-text` ao invés de classes Tailwind de gradiente repetidas, reduzindo duplicação (DRY) e facilitando mudança de palette.
 
 ## Hidden Test Cases (Implementação)
 O domínio `TestCase` já inclui `isHidden`. O serviço de submissão:

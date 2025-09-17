@@ -22,7 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="pt-BR" className="h-full">
       <body className="h-full antialiased selection:bg-emerald-600/40 selection:text-emerald-50">
         <AppShell>
-          <MatrixRainBackground />
+          <MatrixRainBackground variant="editor" intensity="low" />
           {children}
         </AppShell>
       </body>
