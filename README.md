@@ -178,6 +178,88 @@ Contrato de resposta (simplificado):
 }
 ```
 
+## Ranking e Perfis
+O ranking global permite gamificar a evolução dos usuários baseado em desafios resolvidos e tentativa eficiente.
+
+### Endpoint `/api/ranking`
+Retorno (cache incremental `revalidate=30`):
+```
+GET /api/ranking
+{
+  ranking: [
+    {
+      position: number,        // 1-based
+      userId: string,          // id interno (Profile.userId)
+      username: string,        // fallback "Anon" se ausente
+      solved: number,          // quantidade de desafios resolvidos (primeira aprovação conta)
+      attempts: number,        // total de submissões feitas (para desafios resolvidos ou não)
+      efficiency: number       // arredondado para 2 casas: solved / attempts (0 se attempts=0)
+    }, ...
+  ],
+  updatedAt: string            // ISO timestamp de geração
+}
+```
+
+### Ordenação
+1. `solved` DESC (mais resolvidos primeiro)
+2. `attempts` ASC (menos tentativas => mais eficiente em caso de empate)
+3. `username` ASC (desempate estável determinístico)
+
+### Métrica de Eficiência
+```
+efficiency = attempts === 0 ? 0 : (solved / attempts)
+```
+Arredondada para 2 casas decimais no payload. Mantida simples (KISS) para futura evolução (ex: ponderar dificuldade ou penalizar re-submissões rápidas).
+
+### Fallback de Username
+Se o usuário ainda não tiver definido `name` (ex: integração inicial com NextAuth, usuário recém-criado) retornamos `"Anon"` para preservar consistência visual e evitar células vazias. Regra aplicada já no mapeamento de saída do endpoint (SRP do serializer, mantendo domínio puro).
+
+### Medalhas (Top 3)
+A UI (`RankingTable`) aplica classes de cor e `aria-label` para acessibilidade:
+| Posição | Cor (Tailwind)  | rótulo aria (ex: header de linha) |
+|---------|-----------------|------------------------------------|
+| 1       | `text-amber-300`| `1º lugar (Ouro)`                  |
+| 2       | `text-slate-300`| `2º lugar (Prata)`                 |
+| 3       | `text-amber-600`| `3º lugar (Bronze)`                |
+Demais posições não recebem estilização especial (OCP: fácil adicionar top 10 badges depois sem modificar lógica base).
+
+### Componente `RankingTable`
+Responsabilidade única: renderização (SRP). Recebe `rows` já ordenadas pelo repositório/serviço. Aberto para extensão (ex: novas colunas) sem alterar o contrato atual (OCP). Sem dependência direta de fetch (DIP) permitindo reuso em testes e em variantes de página.
+
+Exemplo de uso em página RSC:
+```tsx
+// page.tsx
+const repo = container.resolve(ProfileRepositoryToken);
+const profiles = await repo.all();
+const rows = profiles.map((p,i)=>({
+  position: i+1,
+  username: p.username || 'Anon',
+  solved: p.solved,
+  attempts: p.attempts,
+  efficiency: p.attempts === 0 ? 0 : +(p.solved / p.attempts).toFixed(2)
+}));
+return <RankingTable rows={rows} />;
+```
+
+### Princípios Clean Code & SOLID Aplicados
+* Clean Code: Nomes explícitos (`RankingTable`, `efficiency`), lógica de formatação (fallback, arredondamento) isolada próximo ao endpoint em vez de dispersa na UI.
+* SRP: Separação clara entre agregação/ordenção (`ProfileRepository`) e apresentação (`RankingTable`).
+* OCP: Fácil introduzir novas métricas (ex: `streak`) adicionando campo no mapeamento + coluna nova sem alterar comportamentos existentes.
+* LSP: Qualquer implementação de `ProfileRepository` (in-memory ou Prisma) produz coleção compatível.
+* DIP: Página/endpoint depende de abstração do repositório via container de DI.
+* ISP: Contrato do row minimalista apenas com campos necessários para renderização.
+
+### Futuras Evoluções
+* Paginação / lazy streaming para rankings grandes.
+* Métrica ponderada por dificuldade (peso HARD > MEDIUM > EASY).
+* Badges de streak, velocidade média, tempo até primeira solução.
+* Cache em camada edge ou Redis para alto volume.
+* Export JSON/CSV.
+
+### Testes
+`RankingTable.ui.spec.tsx` valida cabeçalhos, medalhas e fallback vazio. Ordenação coberta em teste de repositório (consistência dos critérios). Reforça confiança para refactors no layout ou estilo.
+
+
 ## Princípios Clean Code Aplicados
 - Nomes descritivos: Entidades (`Challenge`, `TestCase`, `Submission`), serviços (`DefaultSubmissionService`), estratégias claras.
 - Funções pequenas: Cada repositório tem operações focadas (`findByChallengeId`, `saveMany`).
