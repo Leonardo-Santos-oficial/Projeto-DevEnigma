@@ -8,20 +8,22 @@ export interface RankingRow {
   efficiency: number; // 0..1-ish fraction
 }
 
+export interface MedalConfig { className: string; label: string }
+
 interface Props {
   rows: RankingRow[];
   emptyLabel?: string;
+  medalsMap?: Record<number, MedalConfig>;
 }
 
 // Configuração de medalhas isolada (SRP / OCP): facilita evolução (ex: adicionar ícones)
-const MEDALS: Record<number, { className: string; label: string }> = {
+export const DEFAULT_MEDALS: Record<number, MedalConfig> = {
   1: { className: 'text-amber-300', label: 'Ouro' },
   2: { className: 'text-slate-300', label: 'Prata' },
   3: { className: 'text-amber-600', label: 'Bronze' }
 };
 
-
-export function RankingTable({ rows, emptyLabel = 'Nenhum perfil ainda' }: Props) {
+export function RankingTable({ rows, emptyLabel = 'Nenhum perfil ainda', medalsMap = DEFAULT_MEDALS }: Props) {
   return (
     <table className="w-full text-sm border-collapse" aria-label="Tabela de ranking">
       <caption className="sr-only">Ranking de usuários por desafios resolvidos</caption>
@@ -39,7 +41,7 @@ export function RankingTable({ rows, emptyLabel = 'Nenhum perfil ainda' }: Props
           <tr><td colSpan={5} className="py-4 text-center text-neutral-400">{emptyLabel}</td></tr>
         )}
         {rows.map(r => {
-          const medal = MEDALS[r.position];
+          const medal = medalsMap[r.position];
           return (
             <tr key={r.position} className="border-b border-neutral-800 hover:bg-neutral-800/40 transition-colors">
               <th
