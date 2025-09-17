@@ -13,8 +13,14 @@ interface Props {
   emptyLabel?: string;
 }
 
-// SRP: Apenas renderização da tabela de ranking.
-// OCP: Estilização de medalhas baseada em posição; facilmente estensível.
+// Configuração de medalhas isolada (SRP / OCP): facilita evolução (ex: adicionar ícones)
+const MEDALS: Record<number, { className: string; label: string }> = {
+  1: { className: 'text-amber-300', label: 'Ouro' },
+  2: { className: 'text-slate-300', label: 'Prata' },
+  3: { className: 'text-amber-600', label: 'Bronze' }
+};
+
+
 export function RankingTable({ rows, emptyLabel = 'Nenhum perfil ainda' }: Props) {
   return (
     <table className="w-full text-sm border-collapse" aria-label="Tabela de ranking">
@@ -33,23 +39,14 @@ export function RankingTable({ rows, emptyLabel = 'Nenhum perfil ainda' }: Props
           <tr><td colSpan={5} className="py-4 text-center text-neutral-400">{emptyLabel}</td></tr>
         )}
         {rows.map(r => {
-          const medalClass = r.position === 1
-            ? 'text-amber-300'
-            : r.position === 2
-              ? 'text-slate-300'
-              : r.position === 3
-                ? 'text-amber-600'
-                : '';
-          const label = r.position === 1
-            ? 'Ouro'
-            : r.position === 2
-              ? 'Prata'
-              : r.position === 3
-                ? 'Bronze'
-                : undefined;
+          const medal = MEDALS[r.position];
           return (
             <tr key={r.position} className="border-b border-neutral-800 hover:bg-neutral-800/40 transition-colors">
-              <th scope="row" className={"py-1 pr-3 font-medium " + medalClass} aria-label={label ? `${r.position}º lugar (${label})` : undefined}>
+              <th
+                scope="row"
+                className={"py-1 pr-3 font-medium " + (medal?.className || '')}
+                aria-label={medal ? `${r.position}º lugar (${medal.label})` : undefined}
+              >
                 {r.position}
               </th>
               <td className="py-1 pr-3 font-mono">{r.username || 'Anon'}</td>
