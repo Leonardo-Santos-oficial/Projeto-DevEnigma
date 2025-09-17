@@ -1,7 +1,9 @@
 "use client";
 import { useState, useCallback } from 'react';
 
-interface SubmissionCaseView { input: string; expected: string; actual: string; passed: boolean }
+interface DiffLinePart { type: 'context' | 'add' | 'del'; text: string }
+interface DiffLine { lineNumberA: number | null; lineNumberB: number | null; parts: DiffLinePart[] }
+interface SubmissionCaseView { input: string; expected: string; actual: string; passed: boolean; diff?: { line: { type: 'context' | 'add' | 'del'; value: string }[]; inline?: DiffLine[] } }
 interface SubmissionResultView { submissionId: string; status: string; passed: boolean; cases: SubmissionCaseView[] }
 
 interface UseSubmissionOptions {

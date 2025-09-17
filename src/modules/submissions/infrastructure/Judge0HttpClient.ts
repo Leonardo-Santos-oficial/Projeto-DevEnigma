@@ -1,5 +1,7 @@
 import type { Judge0Client, Judge0ExecutionRequest, Judge0ExecutionResult } from '../domain/Judge0Client';
 
+interface HttpClientOptions { timeoutMs?: number; maxRetries?: number }
+
 interface Judge0SubmissionResponse {
   stdout: string | null;
   time: string | null;
@@ -16,8 +18,42 @@ const LANGUAGE_MAP: Record<string, number> = {
   'python3': 71
 };
 
+const DEFAULT_TIMEOUT = Number(process.env.JUDGE0_REQUEST_TIMEOUT_MS || 8000);
+const DEFAULT_RETRIES = Number(process.env.JUDGE0_MAX_RETRIES || 1);
+
+enum Judge0StatusId {
+  Accepted = 3,
+  WrongAnswer = 4,
+  TimeLimitExceeded = 5,
+  CompilationError = 6,
+  RuntimeError = 7
+}
+
+function classifyStatus(id: number): string {
+  switch (id) {
+    case Judge0StatusId.Accepted: return 'OK';
+    case Judge0StatusId.WrongAnswer: return 'WA';
+    case Judge0StatusId.TimeLimitExceeded: return 'TLE';
+    case Judge0StatusId.CompilationError: return 'CE';
+    case Judge0StatusId.RuntimeError: return 'RE';
+    default: return 'OTHER';
+  }
+}
+
+async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return await Promise.race([
+    promise,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error(`Timeout after ${ms}ms`)), ms))
+  ]);
+}
+
 export class Judge0HttpClient implements Judge0Client {
-  constructor(private readonly baseUrl: string, private readonly apiKey?: string) {}
+  private readonly timeoutMs: number;
+  private readonly maxRetries: number;
+  constructor(private readonly baseUrl: string, private readonly apiKey?: string, opts?: HttpClientOptions) {
+    this.timeoutMs = opts?.timeoutMs ?? DEFAULT_TIMEOUT;
+    this.maxRetries = opts?.maxRetries ?? DEFAULT_RETRIES;
+  }
 
   async execute(request: Judge0ExecutionRequest): Promise<Judge0ExecutionResult> {
     const langId = LANGUAGE_MAP[request.language.toLowerCase()];
@@ -31,16 +67,19 @@ export class Judge0HttpClient implements Judge0Client {
 
     for (const tc of request.testCases) {
       const stdout = await this.runSingle(request.code, langId, tc.input);
-      const actual = stdout.stdout ?? stdout.stderr ?? stdout.compile_output ?? '';
-      const passed = actual.trim() === tc.expectedOutput.trim();
+      const rawActual = stdout.stdout ?? stdout.stderr ?? stdout.compile_output ?? '';
+      const actual = rawActual.replace(/\r/g, '').replace(/\n+$/, '');
+      const statusCode = classifyStatus(stdout.status.id);
+      const passed = statusCode === 'OK' && actual.trim() === tc.expectedOutput.trim();
       if (stdout.time) maxTime = Math.max(maxTime, parseFloat(stdout.time) * 1000);
       if (stdout.memory) maxMem = Math.max(maxMem, stdout.memory);
+      const errorDetail = passed ? undefined : (stdout.stderr || stdout.compile_output || stdout.status.description);
       cases.push({
         input: tc.input,
         expectedOutput: tc.expectedOutput,
         actualOutput: actual,
         passed,
-        error: (!passed && (stdout.stderr || stdout.compile_output)) ? (stdout.stderr || stdout.compile_output || undefined) : undefined
+        error: errorDetail
       });
     }
 
@@ -62,15 +101,26 @@ export class Judge0HttpClient implements Judge0Client {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (this.apiKey) headers['X-Api-Key'] = this.apiKey;
 
-    const res = await fetch(`${this.baseUrl}/submissions?base64_encoded=false&wait=true`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`Judge0 HTTP error ${res.status}: ${text}`);
+    let attempt = 0;
+    while (true) {
+      attempt++;
+      try {
+        const res = await withTimeout(fetch(`${this.baseUrl}/submissions?base64_encoded=false&wait=true`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(body)
+        }), this.timeoutMs);
+        if (!res.ok) {
+          const text = await res.text();
+            if (res.status >= 500 && attempt <= this.maxRetries) continue;
+          throw new Error(`Judge0 HTTP error ${res.status}: ${text}`);
+        }
+        return await res.json() as Judge0SubmissionResponse;
+      } catch (err: any) {
+        const msg = String(err?.message || '');
+        if ((/Timeout/.test(msg)) && attempt <= this.maxRetries) continue;
+        throw err;
+      }
     }
-    return (await res.json()) as Judge0SubmissionResponse;
   }
 }

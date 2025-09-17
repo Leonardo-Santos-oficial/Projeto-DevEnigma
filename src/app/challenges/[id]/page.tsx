@@ -39,9 +39,9 @@ export default async function ChallengePage({ params }: ChallengePageProps) {
           initialCode={challenge.starterCode}
         />
       </div>
-      <footer className="pt-2 text-[11px] text-neutral-500 flex items-center justify-between border-t border-neutral-800/60">
-        <span>DevEnigma • Improve by refactoring</span>
-        <span>Challenge ID: {challenge.id}</span>
+      <footer className="pt-2 text-[11px] text-neutral-200 flex items-center justify-between border-t border-neutral-800/60">
+        <span className="font-medium text-white">DevEnigma • Improve by refactoring</span>
+        <span className="text-white">Challenge ID: {challenge.id}</span>
       </footer>
     </main>
   );
