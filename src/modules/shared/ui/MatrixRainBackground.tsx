@@ -1,16 +1,81 @@
 "use client";
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+
+// --- Types & Config (SRP: apenas declaração de contrato) ---
+interface MatrixRainProps {
+  opacity?: number;           // Opacidade base aplicada por caractere
+  fontSize?: number;          // Tamanho base da fonte em px
+  density?: number;           // Fator de densidade (1 = padrão, >1 mais colunas)
+  fadeAlpha?: number;         // Intensidade do fade trail (0..1 - menor = trail mais longo)
+  color?: string;             // Cor principal (primeiro plano)
+  accentColor?: string;       // Cor acentuada para alguns caracteres
+  speedRange?: [number, number]; // Intervalo de velocidade (linhas por tick)
+  glow?: boolean;             // Ativar brilho na "cabeça" da coluna
+}
+
+interface DropState {
+  y: number;      // posição em linhas
+  speed: number;  // linhas por frame
+}
+
+const DEFAULT_CONFIG: Required<Omit<MatrixRainProps, 'speedRange'>> & { speedRange: [number, number] } = {
+  opacity: 0.6,
+  fontSize: 14,
+  density: 1,
+  fadeAlpha: 0.08,
+  color: '#10b981',      // emerald-500
+  accentColor: '#34d399', // emerald-400
+  speedRange: [0.75, 1.75],
+  glow: true
+};
+
+// Conjunto de caracteres (aberto para extensão sem modificar draw loop => OCP)
+const CHAR_SET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ@#$%&*+-/';
+
+// Hook utilitário para preferências de movimento reduzido (ISP: componente não precisa saber sobre window diretamente fora do efeito principal)
+function usePrefersReducedMotion(): boolean {
+  const [prefers, setPrefers] = useState(false);
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setPrefers(mq.matches);
+    const listener = (e: MediaQueryListEvent) => setPrefers(e.matches);
+    mq.addEventListener('change', listener);
+    return () => mq.removeEventListener('change', listener);
+  }, []);
+  return prefers;
+}
 
 /**
- * MatrixRainBackground
- * Canvas leve para efeito de "letras caindo" (estilo Matrix) atrás do conteúdo.
- * Responsável apenas por desenhar; não conhece domínio (SRP) e pode ser facilmente trocado (OCP).
+ * MatrixRainBackground aprimorado: letras/números caindo com velocidades variadas, cores acentuadas ocasionais,
+ * respeito à preferência de movimento reduzido e configurável via props.
+ * Clean Code: funções pequenas, nomes explícitos. SOLID: SRP (desenhar efeito), OCP (config via props), DIP implícita (sem dependências fortes externas).
  */
-export function MatrixRainBackground() {
+export function MatrixRainBackground(props: MatrixRainProps) {
+  const cfg = useMemo(() => ({ ...DEFAULT_CONFIG, ...props }), [props]);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animationRef = useRef<number | null>(null);
+  const dropsRef = useRef<DropState[]>([]);
   const columnsRef = useRef<number>(0);
-  const dropsRef = useRef<number[]>([]);
+  const reducedMotion = usePrefersReducedMotion();
+
+  const randomBetween = useCallback((min: number, max: number) => Math.random() * (max - min) + min, []);
+
+  const setupCanvas = useCallback((canvasEl: HTMLCanvasElement) => {
+    const dpr = window.devicePixelRatio || 1;
+    canvasEl.width = window.innerWidth * dpr;
+    canvasEl.height = window.innerHeight * dpr;
+    canvasEl.style.width = window.innerWidth + 'px';
+    canvasEl.style.height = window.innerHeight + 'px';
+    const ctx = canvasEl.getContext('2d');
+    if (ctx) ctx.scale(dpr, dpr);
+    const columns = Math.floor((window.innerWidth / cfg.fontSize) * cfg.density);
+    columnsRef.current = columns;
+    dropsRef.current = Array.from({ length: columns }, () => ({
+      y: Math.floor(Math.random() * -50),
+      speed: randomBetween(cfg.speedRange[0], cfg.speedRange[1])
+    }));
+  }, [cfg.fontSize, cfg.density, cfg.speedRange, randomBetween]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -18,47 +83,76 @@ export function MatrixRainBackground() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    function resize() {
-      if (!canvas) return;
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      const fontSize = 14;
-      columnsRef.current = Math.floor(canvas.width / fontSize);
-      dropsRef.current = Array(columnsRef.current).fill(0);
+    setupCanvas(canvas);
+    let lastTs = 0;
+    let resizeRaf: number | null = null;
+    function onResize() {
+      if (resizeRaf) cancelAnimationFrame(resizeRaf);
+      resizeRaf = requestAnimationFrame(() => {
+        if (!canvas) return;
+        setupCanvas(canvas);
+      });
     }
-    resize();
-    window.addEventListener('resize', resize);
+    window.addEventListener('resize', onResize, { passive: true });
 
-    const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ@#$%&*+-/';
-    const fontSize = 14;
-
-    function draw() {
-      if (!ctx) return;
-      ctx.fillStyle = 'rgba(0,0,0,0.18)';
-  ctx.fillRect(0, 0, canvas!.width, canvas!.height);
-      ctx.fillStyle = '#10b981'; // emerald-500
-      ctx.font = fontSize + 'px monospace';
+    if (reducedMotion) {
+      ctx.fillStyle = 'rgba(0,0,0,0.90)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.font = cfg.fontSize + 'px monospace';
+      ctx.fillStyle = cfg.color;
       for (let i = 0; i < dropsRef.current.length; i++) {
-        const text = chars.charAt(Math.floor(Math.random() * chars.length));
-        const x = i * fontSize;
-        const y = dropsRef.current[i] * fontSize;
-        ctx.fillText(text, x, y);
-  if (canvas && y > canvas.height && Math.random() > 0.975) {
-          dropsRef.current[i] = 0;
+        const ch = CHAR_SET.charAt(Math.floor(Math.random() * CHAR_SET.length));
+        const x = i * cfg.fontSize;
+        const y = Math.random() * canvas.height;
+        ctx.globalAlpha = cfg.opacity;
+        ctx.fillText(ch, x, y);
+      }
+      return () => window.removeEventListener('resize', onResize);
+    }
+
+    function draw(ts: number) {
+      if (!canvas || !ctx) return;
+      const delta = ts - lastTs;
+      lastTs = ts;
+      ctx.fillStyle = `rgba(0,0,0,${cfg.fadeAlpha})`;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.font = `${cfg.fontSize}px monospace`;
+      for (let i = 0; i < dropsRef.current.length; i++) {
+        const drop = dropsRef.current[i];
+        const x = i * cfg.fontSize;
+        const yPx = drop.y * cfg.fontSize;
+        const isHead = Math.random() > 0.9;
+        ctx.fillStyle = isHead ? cfg.accentColor : cfg.color;
+        if (cfg.glow) {
+          if (isHead) {
+            ctx.shadowColor = ctx.fillStyle;
+            ctx.shadowBlur = 8;
+          } else {
+            ctx.shadowBlur = 0;
+          }
         }
-        dropsRef.current[i]++;
+        const ch = CHAR_SET.charAt(Math.floor(Math.random() * CHAR_SET.length));
+        ctx.globalAlpha = cfg.opacity * (isHead ? 1 : 0.85);
+        ctx.fillText(ch, x, yPx);
+        drop.y += drop.speed * (delta / 16.666);
+        if (yPx > canvas.height && Math.random() > 0.965) {
+          drop.y = Math.floor(Math.random() * -20);
+          drop.speed = randomBetween(cfg.speedRange[0], cfg.speedRange[1]);
+        }
       }
       animationRef.current = requestAnimationFrame(draw);
     }
-    draw();
+    animationRef.current = requestAnimationFrame(draw);
+
     return () => {
-      window.removeEventListener('resize', resize);
+      window.removeEventListener('resize', onResize);
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- cfg é estável via useMemo e funções via useCallback
+  }, [cfg, setupCanvas, reducedMotion, randomBetween]);
 
   return (
-    <div className="pointer-events-none fixed inset-0 -z-10 opacity-40" aria-hidden="true">
+    <div className="pointer-events-none fixed inset-0 -z-10" aria-hidden="true">
       <canvas ref={canvasRef} className="w-full h-full" />
       <div className="absolute inset-0 bg-gradient-to-b from-neutral-900/10 via-transparent to-neutral-950" />
     </div>
