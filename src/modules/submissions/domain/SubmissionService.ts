@@ -1,5 +1,6 @@
 import type { Logger } from '@core/logging/Logger';
 import type { TestCaseRepository } from '@modules/challenges/domain/TestCaseRepository';
+import type { ProfileRepository } from '@modules/profiles/domain/ProfileRepository';
 
 import type { EvaluationStrategy } from './EvaluationStrategy';
 import type { Judge0Client } from './Judge0Client';
@@ -7,6 +8,7 @@ import { Submission } from './Submission';
 import type { SubmissionRepository } from './SubmissionRepository';
 import { SubmissionStatus } from './SubmissionStatus';
 import { diffLines, diffInline } from './diff/diff';
+import { Profile } from '@modules/profiles/domain/Profile';
 
 export interface CreateSubmissionInput {
   code: string;
@@ -48,7 +50,8 @@ export class DefaultSubmissionService implements SubmissionService {
     private readonly submissionRepo: SubmissionRepository,
     private readonly judge0: Judge0Client,
     private readonly strategy: EvaluationStrategy | undefined,
-    private readonly logger: Logger
+    private readonly logger: Logger,
+    private readonly profileRepo?: ProfileRepository
   ) {}
 
   async submit(input: CreateSubmissionInput): Promise<SubmissionResultView> {
@@ -91,6 +94,28 @@ export class DefaultSubmissionService implements SubmissionService {
 
     const finalStatus = allPassed ? SubmissionStatus.PASSED : SubmissionStatus.FAILED;
     await this.submissionRepo.updateStatus(submission.id, finalStatus, allPassed, exec.executionTimeMs, exec.memoryKb);
+
+    // Atualiza perfil (best effort, não falha submissão se erro)
+    if (this.profileRepo) {
+      try {
+        let profile = await this.profileRepo.findById(input.userId);
+        if (!profile) {
+          profile = Profile.createNew(input.userId, `user-${input.userId.slice(0,6)}`);
+        }
+        let firstTimeSolved = false;
+        if (finalStatus === SubmissionStatus.PASSED) {
+          // Verifica se já existia submissão passada deste usuário para o mesmo challenge
+            const prevSubs = await this.submissionRepo.findRecentByUserAndChallenge(input.userId, input.challengeId, 50);
+            const anyPrevPassed = prevSubs.some(s => s.passed && s.id !== submission.id);
+            firstTimeSolved = !anyPrevPassed;
+        }
+        profile.registerSubmission(finalStatus === SubmissionStatus.PASSED, firstTimeSolved);
+        await this.profileRepo.save(profile);
+      } catch (e) {
+        this.logger.error('profile.update.error', { err: (e as Error).message });
+      }
+    }
+
     this.logger.info('submission.finish', {
       submissionId: submission.id,
       status: finalStatus,

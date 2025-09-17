@@ -31,5 +31,7 @@ export const TOKENS = {
   ChallengeRepository: 'ChallengeRepository',
   TestCaseRepository: 'TestCaseRepository',
   SubmissionRepository: 'SubmissionRepository',
-  SubmissionService: 'SubmissionService'
+  SubmissionService: 'SubmissionService',
+  ProfileRepository: 'ProfileRepository',
+  ProfileService: 'ProfileService'
 } as const;
