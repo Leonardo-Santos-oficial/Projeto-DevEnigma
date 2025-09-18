@@ -1,13 +1,13 @@
-import '../../core/bootstrap';
+import '@core/bootstrap';
 import { NextResponse } from 'next/server';
 
 import { container, TOKENS } from '@core/di/container';
-import type { Profile } from '@modules/profiles/domain/Profile';
+import type { ProfileRepository } from '@modules/profiles/domain/ProfileRepository';
 
 export const revalidate = 30; // incremental revalidation
 
 export async function GET() {
-  const repo = container.resolve<{ all(): Promise<Profile[]> }>(TOKENS.ProfileRepository);
+  const repo = container.resolve<ProfileRepository>(TOKENS.ProfileRepository);
   const profiles = await repo.all();
   const data = profiles.map((p, idx: number) => ({
     position: idx + 1,
