@@ -9,14 +9,14 @@ import { InMemoryChallengeRepository } from '@modules/challenges/infrastructure/
 import { InMemoryTestCaseRepository } from '@modules/challenges/infrastructure/InMemoryTestCaseRepository';
 import { PrismaChallengeRepository } from '@modules/challenges/infrastructure/PrismaChallengeRepository';
 import { PrismaTestCaseRepository } from '@modules/challenges/infrastructure/PrismaTestCaseRepository';
+import { InMemoryProfileRepository } from '@modules/profiles/infrastructure/InMemoryProfileRepository';
+import { PrismaProfileRepository } from '@modules/profiles/infrastructure/PrismaProfileRepository';
 import { WhitespaceCaseInsensitiveStrategy } from '@modules/submissions/domain/EvaluationStrategy';
 import { DefaultSubmissionService } from '@modules/submissions/domain/SubmissionService';
 import { InMemorySubmissionRepository } from '@modules/submissions/infrastructure/InMemorySubmissionRepository';
 import { Judge0HttpClient } from '@modules/submissions/infrastructure/Judge0HttpClient';
 import { MockJudge0Client } from '@modules/submissions/infrastructure/MockJudge0Client';
 import { PrismaSubmissionRepository } from '@modules/submissions/infrastructure/PrismaSubmissionRepository';
-import { InMemoryProfileRepository } from '@modules/profiles/infrastructure/InMemoryProfileRepository';
-import { PrismaProfileRepository } from '@modules/profiles/infrastructure/PrismaProfileRepository';
 
 import { container, TOKENS } from '../di/container';
 container.registerSingleton('Logger', logger);

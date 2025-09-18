@@ -1,4 +1,4 @@
-import { Profile } from '../domain/Profile';
+import type { Profile } from '../domain/Profile';
 import type { ProfileRepository } from '../domain/ProfileRepository';
 
 export class InMemoryProfileRepository implements ProfileRepository {

@@ -1,4 +1,5 @@
 "use client";
+import type { OnMount } from '@monaco-editor/react';
 import dynamic from 'next/dynamic';
 import React, { useCallback } from 'react';
 
@@ -22,7 +23,7 @@ export function CodeEditor({ value, language, onChange, height = '100%', readOnl
     onChange(val ?? '');
   }, [onChange]);
 
-  const handleMount = useCallback(async (editor: any, monaco: any) => {
+  const handleMount = useCallback<OnMount>((editor, monaco) => {
     // Define tema custom inspirado em matrix usando tokens existentes
     monaco.editor.defineTheme('matrix-dark', {
       base: 'vs-dark',

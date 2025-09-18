@@ -1,13 +1,14 @@
 import '@core/bootstrap';
 import { container, TOKENS } from '@core/di/container';
+import type { ProfileRepository } from '@modules/profiles/domain/ProfileRepository';
 import { RankingTable } from '@modules/profiles/ui/RankingTable';
 
 export const revalidate = 30;
 
 export default async function RankingPage() {
-  const repo = container.resolve<any>(TOKENS.ProfileRepository);
+  const repo = container.resolve<ProfileRepository>(TOKENS.ProfileRepository);
   const profiles = await repo.all();
-  const rows = profiles.map((p: any, i: number) => ({
+  const rows = profiles.map((p, i: number) => ({
     position: i + 1,
     username: p.username || 'Anon',
     solved: p.solved,

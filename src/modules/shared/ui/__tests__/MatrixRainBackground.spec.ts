@@ -1,3 +1,4 @@
+/* eslint-disable import/order, @typescript-eslint/no-explicit-any */
 import { describe, it, expect } from 'vitest';
 import { computeMatrixConfig, DEFAULT_MATRIX_CONFIG } from '../MatrixRainBackground';
 

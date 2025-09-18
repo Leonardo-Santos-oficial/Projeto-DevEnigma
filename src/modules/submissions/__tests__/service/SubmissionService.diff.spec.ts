@@ -1,3 +1,4 @@
+/* eslint-disable import/order, @typescript-eslint/no-explicit-any */
 import { describe, it, expect } from 'vitest';
 import { DefaultSubmissionService } from '../../domain/SubmissionService';
 import { InMemoryTestCaseRepository } from '@modules/challenges/infrastructure/InMemoryTestCaseRepository';

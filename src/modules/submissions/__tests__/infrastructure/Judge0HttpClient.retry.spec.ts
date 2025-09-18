@@ -1,3 +1,4 @@
+/* eslint-disable import/order, @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi } from 'vitest';
 import { Judge0HttpClient } from '../../infrastructure/Judge0HttpClient';
 

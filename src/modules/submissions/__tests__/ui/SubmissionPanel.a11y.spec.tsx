@@ -1,14 +1,16 @@
-import { describe, it, expect, vi, beforeAll } from 'vitest';
+/* eslint-disable import/order */
+import React from 'react';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import React from 'react';
 import { SubmissionPanel } from '../../ui/SubmissionPanel';
 
 // Mock useSubmission hook to control behavior
 vi.mock('../../ui/useSubmission', () => {
   return {
     useSubmission: () => {
-      const [result, setResult] = React.useState<any | null>(null);
+  interface Result { submissionId: string; status: string; passed: boolean; cases: unknown[] }
+  const [result, setResult] = React.useState<Result | null>(null);
       const submit = () => setResult({ submissionId: 'abc123', status: 'PASSED', passed: true, cases: [] });
       return {
         code: 'print()',

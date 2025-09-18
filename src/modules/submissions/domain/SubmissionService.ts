@@ -1,13 +1,14 @@
+/* eslint-disable import/order */
 import type { Logger } from '@core/logging/Logger';
 import type { TestCaseRepository } from '@modules/challenges/domain/TestCaseRepository';
 import type { ProfileRepository } from '@modules/profiles/domain/ProfileRepository';
-
 import type { EvaluationStrategy } from './EvaluationStrategy';
 import type { Judge0Client } from './Judge0Client';
-import { Submission } from './Submission';
 import type { SubmissionRepository } from './SubmissionRepository';
-import { SubmissionStatus } from './SubmissionStatus';
+
 import { diffLines, diffInline } from './diff/diff';
+import { Submission } from './Submission';
+import { SubmissionStatus } from './SubmissionStatus';
 import { Profile } from '@modules/profiles/domain/Profile';
 
 export interface CreateSubmissionInput {

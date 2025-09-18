@@ -55,8 +55,13 @@ function usePrefersReducedMotion(): boolean {
  * respeito à preferência de movimento reduzido e configurável via props.
  * Clean Code: funções pequenas, nomes explícitos. SOLID: SRP (desenhar efeito), OCP (config via props), DIP implícita (sem dependências fortes externas).
  */
-export function computeMatrixConfig(input: MatrixRainProps): ReturnType<typeof Object.assign> {
-  const merged: any = { ...DEFAULT_MATRIX_CONFIG, ...input }; // tipo interno simples para composição
+interface InternalMatrixConfig extends Omit<Required<MatrixRainProps>, 'speedRange' | 'variant' | 'intensity'> {
+  speedRange: [number, number];
+  variant: 'default' | 'editor';
+  intensity: 'low' | 'medium' | 'high';
+}
+export function computeMatrixConfig(input: MatrixRainProps): InternalMatrixConfig {
+  const merged: InternalMatrixConfig = { ...(DEFAULT_MATRIX_CONFIG as InternalMatrixConfig), ...(input as Partial<InternalMatrixConfig>) };
   switch (merged.intensity) {
     case 'low':
       merged.opacity = Math.min(merged.opacity, 0.35);
