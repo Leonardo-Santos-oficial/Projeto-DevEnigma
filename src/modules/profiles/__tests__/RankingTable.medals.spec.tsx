@@ -1,7 +1,9 @@
-import { describe, it, expect } from 'vitest';
-import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { RankingTable, DEFAULT_MEDALS, MedalConfig } from '../ui/RankingTable';
+import React from 'react';
+import { describe, it, expect } from 'vitest';
+
+import { RankingTable, DEFAULT_MEDALS } from '../ui/RankingTable';
+import type { MedalConfig } from '../ui/RankingTable';
 
 function extractRowHeader(position: number) {
   return screen.getByRole('rowheader', { name: new RegExp(`^${position}º`, 'i') });

@@ -1,4 +1,4 @@
-import { Profile } from './Profile';
+import type { Profile } from './Profile';
 
 export interface ProfileRepository {
   findById(id: string): Promise<Profile | null>;

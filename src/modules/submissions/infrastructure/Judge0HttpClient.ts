@@ -102,7 +102,7 @@ export class Judge0HttpClient implements Judge0Client {
     if (this.apiKey) headers['X-Api-Key'] = this.apiKey;
 
     let attempt = 0;
-    while (true) {
+    while (attempt < this.maxRetries + 1) {
       attempt++;
       try {
         const res = await withTimeout(fetch(`${this.baseUrl}/submissions?base64_encoded=false&wait=true`, {
@@ -116,11 +116,13 @@ export class Judge0HttpClient implements Judge0Client {
           throw new Error(`Judge0 HTTP error ${res.status}: ${text}`);
         }
         return await res.json() as Judge0SubmissionResponse;
-      } catch (err: any) {
-        const msg = String(err?.message || '');
-        if ((/Timeout/.test(msg)) && attempt <= this.maxRetries) continue;
+      } catch (err: unknown) {
+        const msg = typeof err === 'object' && err && 'message' in err ? String((err as { message?: unknown }).message) : '';
+        if (/Timeout/.test(msg) && attempt <= this.maxRetries) continue;
         throw err;
       }
     }
+    // Should never reach here due to return inside loop; safeguard for type system
+    throw new Error('Judge0 submission failed after maximum retries');
   }
 }
