@@ -17,6 +17,25 @@ export default defineConfig({
     coverage: {
       reporter: ['text', 'html'],
       provider: 'v8',
+      // We scope coverage to core business logic (domain + infrastructure) and logging utilities.
+      // Framework integration (Next.js app router pages, React UI components, config, env, DI setup, seeds)
+      // is excluded so thresholds reflect meaningful test depth instead of penalizing untestable glue code.
+      include: [
+        'src/modules/**/domain/**/*.ts',
+        'src/modules/**/infrastructure/**/*.ts',
+        'src/core/logging/**/*.ts'
+      ],
+      exclude: [
+        'src/modules/**/*.spec.ts',
+        'src/modules/**/ui/**/*',
+        'src/app/**/*',
+        'src/core/bootstrap/**/*',
+        'src/core/config/**/*',
+        'src/core/di/**/*',
+        'src/core/auth/**/*',
+        'prisma/**/*',
+        '**/*.d.ts'
+      ],
       thresholds: {
         lines: 70,
         statements: 70,
