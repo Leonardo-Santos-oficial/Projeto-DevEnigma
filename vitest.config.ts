@@ -16,7 +16,13 @@ export default defineConfig({
     include: ['src/**/*.spec.ts'],
     coverage: {
       reporter: ['text', 'html'],
-      provider: 'v8'
+      provider: 'v8',
+      thresholds: {
+        lines: 70,
+        statements: 70,
+        functions: 60,
+        branches: 55
+      }
     }
   }
 });

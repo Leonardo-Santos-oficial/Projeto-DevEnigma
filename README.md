@@ -1,6 +1,28 @@
 # DevEnigma
 
+[![CI](https://github.com/Leonardo-Santos-oficial/Projeto-DevEnigma/actions/workflows/ci.yml/badge.svg)](https://github.com/Leonardo-Santos-oficial/Projeto-DevEnigma/actions/workflows/ci.yml)
+
 Plataforma educacional gamificada focada em aprimorar debugging, refatoração e compreensão de código existente.
+
+> Quality Gates: ESLint (0 warnings), TypeScript strict, Test thresholds (lines ≥70%, statements ≥70%, functions ≥60%, branches ≥55%), build must pass.
+
+## Princípios Clean Code & SOLID (Resumo Prático)
+| Princípio | Aplicação no Projeto |
+|-----------|----------------------|
+| Nomes Significativos | Repositórios, serviços e entidades com nomes autoexplicativos (`DefaultSubmissionService`, `InMemoryTestCaseRepository`). |
+| Funções Pequenas (SRP) | Métodos curtos focados (ex: `computeMatrixConfig`, repositórios apenas persistência). |
+| DRY | Seeds centralizados no bootstrap, diff logic unificada, tokens reutilizados. |
+| Comentários Relevantes | Comentários só para contexto (ex: decisões de fallback). |
+| Testes Claros | Casos nomeados explicitamente (ex: `diff generation`, `hidden cases`). |
+| Refatoração Contínua | Introdução de hidden cases e ranking sem quebrar contratos públicos. |
+| OCP | Estratégias de avaliação plugáveis; fácil adicionar novas sem alterar serviço. |
+| LSP | Implementações de `Judge0Client` e repositórios substituíveis. |
+| ISP | Interfaces enxutas (`SubmissionRepository`, `TestCaseRepository`). |
+| DIP | Serviço depende de abstrações obtidas via container DI. |
+
+## CI / Automação
+Pipeline (GitHub Actions) garante: lint (sem warnings), types, testes com cobertura mínima, build, artefato de cobertura. Cache de build Next.js e gatilho manual (`workflow_dispatch`) habilitados.
+
 
 ## Visão
 Em vez de criar algoritmos do zero, o usuário corrige e otimiza trechos com bugs, aproxima-se de cenários reais e evolui habilidades de engenharia.
