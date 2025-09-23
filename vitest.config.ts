@@ -37,10 +37,12 @@ export default defineConfig({
         '**/*.d.ts'
       ],
       thresholds: {
-        lines: 70,
-        statements: 70,
-        functions: 60,
-        branches: 55
+        // Ajustados após estabilizar suite (atual ~90% linhas / ~86% branches global):
+        // Mantemos margem para não quebrar builds por flutuações pequenas enquanto cobrimos repositórios Prisma faltantes.
+        lines: 85,
+        statements: 85,
+        functions: 75,
+        branches: 70
       }
     }
   }
