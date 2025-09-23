@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+
 import { ExactMatchStrategy, WhitespaceCaseInsensitiveStrategy } from '../domain/EvaluationStrategy';
 
 const baseCtx = (expected: string[]) => ({

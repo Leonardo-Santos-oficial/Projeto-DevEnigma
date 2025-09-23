@@ -1,5 +1,6 @@
 // Composition Root (composition root isolado: SRP para configurar DI)
 import type { PrismaClient } from '@prisma/client';
+
 import { loadEnv } from '@core/config/env';
 import { prisma as sharedPrisma } from '@core/database/prismaClient';
 import { logger } from '@core/logging/Logger';

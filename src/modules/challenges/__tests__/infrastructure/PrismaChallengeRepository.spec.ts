@@ -62,7 +62,8 @@ describe('PrismaChallengeRepository', () => {
     const entity = Challenge.create(challengeData);
     await repo.save(entity);
     expect(prisma.challenge.upsert).toHaveBeenCalled();
-  const call = (prisma.challenge.upsert as unknown as { mock: { calls: any[][] } }).mock.calls[0][0];
+  const upsertMock = prisma.challenge.upsert as unknown as { mock: { calls: unknown[][] } };
+  const call = upsertMock.mock.calls[0][0] as { update: { tags: unknown }; create: { tags: unknown } };
     // Em atualização usamos sintaxe { set: [...] } para substituir todo array
     expect(call.update.tags).toEqual({ set: ['array','strings'] });
     // Na criação pode ser passado diretamente como array
