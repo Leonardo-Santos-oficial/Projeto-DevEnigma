@@ -3,7 +3,9 @@
 import type { Session, NextAuthOptions } from 'next-auth';
 import type { JWT } from 'next-auth/jwt';
 import GitHubProvider from 'next-auth/providers/github';
+
 import { logger } from '@core/logging/Logger';
+
 import { isGitHubAuthConfigured } from './status';
 // Prisma adapter só é carregado se houver DATABASE_URL definido.
 let adapter: NextAuthOptions['adapter'] = undefined;
