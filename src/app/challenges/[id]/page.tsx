@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import '@core/bootstrap';
 
+import { getCurrentUserId } from '@core/auth/session';
 import { container, TOKENS } from '@core/di/container';
 import type { ChallengeRepository } from '@modules/challenges/domain/ChallengeRepository';
 import { SubmissionPanel } from '@modules/submissions/ui/SubmissionPanel';
@@ -14,6 +15,7 @@ export default async function ChallengePage({ params }: ChallengePageProps) {
   const repository = container.resolve<ChallengeRepository>(TOKENS.ChallengeRepository);
   const challenge = await repository.findById(params.id);
   if (!challenge) return notFound();
+  const userId = await getCurrentUserId();
 
   return (
     <main className="relative flex flex-col gap-4 px-6 py-5 h-[calc(100vh-0px)]">
@@ -34,7 +36,7 @@ export default async function ChallengePage({ params }: ChallengePageProps) {
       <div className="flex-1 min-h-0">
         <SubmissionPanel
           challengeId={challenge.id}
-          userId="dev-user"
+          userId={userId ?? undefined}
           language={challenge.language}
           initialCode={challenge.starterCode}
         />
