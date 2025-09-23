@@ -3,9 +3,9 @@
 import type { Session, NextAuthOptions } from 'next-auth';
 import type { JWT } from 'next-auth/jwt';
 import GitHubProvider from 'next-auth/providers/github';
+import { logger } from '@core/logging/Logger';
 
 import { isGitHubAuthConfigured } from './status';
-import { logger } from '@core/logging/Logger';
 // Prisma adapter só é carregado se houver DATABASE_URL definido.
 let adapter: NextAuthOptions['adapter'] = undefined;
 const hasDatabase = !!process.env.DATABASE_URL;
@@ -17,12 +17,10 @@ if (hasDatabase) {
     const { prisma } = require('@core/database/prismaClient');
     adapter = PrismaAdapter(prisma);
   } catch (_err) {
-    // eslint-disable-next-line no-console
-    console.warn('[auth] Falha ao inicializar PrismaAdapter, prosseguindo sem OAuth (verifique dependências e DATABASE_URL)');
+  logger.error('[auth] Falha ao inicializar PrismaAdapter, prosseguindo sem OAuth (verifique dependências e DATABASE_URL)');
   }
 } else {
-  // eslint-disable-next-line no-console
-  console.warn('[auth] DATABASE_URL ausente — OAuth GitHub requer banco para persistir contas.');
+  logger.info('[auth] DATABASE_URL ausente — OAuth GitHub requer banco para persistir contas.');
 }
 
 function warnAuthEnv() {
@@ -37,8 +35,7 @@ function warnAuthEnv() {
     const parts: string[] = [];
     if (missing.length) parts.push(`faltando: ${missing.join(', ')}`);
     if (weak.length) parts.push(`fraca: ${weak.join(', ')}`);
-    // eslint-disable-next-line no-console
-    console.warn(`[auth] Config incompleta (${parts.join(' | ')}). Enquanto GITHUB_ID/GITHUB_SECRET não estiverem válidos, o link de login poderá falhar.`);
+  logger.info(`[auth] Config incompleta (${parts.join(' | ')}). Enquanto GITHUB_ID/GITHUB_SECRET não estiverem válidos, o link de login poderá falhar.`);
   }
 }
 warnAuthEnv();
