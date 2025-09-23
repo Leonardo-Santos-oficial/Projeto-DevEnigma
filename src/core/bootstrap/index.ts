@@ -44,6 +44,14 @@ if (env.USE_IN_MEMORY !== 'true') {
 
 const USE_IN_MEMORY = process.env.USE_IN_MEMORY === 'true';
 
+// Log inicial explícito do modo atual para facilitar diagnóstico (SRP: apenas informação, sem alterar fluxo)
+logger.info('bootstrap.mode', {
+  nodeEnv: process.env.NODE_ENV,
+  useInMemory: USE_IN_MEMORY,
+  hasDatabaseUrl: Boolean(process.env.DATABASE_URL),
+  isBuilding
+});
+
 if (USE_IN_MEMORY) {
   const now = () => new Date();
   const inMemoryChallenges = [
