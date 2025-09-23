@@ -4,7 +4,6 @@ import type { Session, NextAuthOptions } from 'next-auth';
 import type { JWT } from 'next-auth/jwt';
 import GitHubProvider from 'next-auth/providers/github';
 import { logger } from '@core/logging/Logger';
-
 import { isGitHubAuthConfigured } from './status';
 // Prisma adapter só é carregado se houver DATABASE_URL definido.
 let adapter: NextAuthOptions['adapter'] = undefined;
@@ -85,8 +84,7 @@ export const authOptions: NextAuthOptions = {
           (session.user as Session['user'] & { id: string }).id = token.sub;
         }
       } catch (e) {
-        // eslint-disable-next-line no-console
-        console.warn('[auth:sessionCallback] falha ao tentar garantir user.id', (e as Error).message);
+        logger.error('[auth:sessionCallback] falha ao tentar garantir user.id', { error: (e as Error).message });
       }
       return session;
     },
@@ -104,19 +102,13 @@ export const authOptions: NextAuthOptions = {
     }
   },
   events: {
-    async signIn(message) {
-      // eslint-disable-next-line no-console
-      console.log('[auth:event] signIn', { userId: message?.user?.id });
-    },
-    async signOut() {
-      // eslint-disable-next-line no-console
-      console.log('[auth:event] signOut');
-    }
+    async signIn(message) { logger.info('[auth:event] signIn', { userId: message?.user?.id }); },
+    async signOut() { logger.info('[auth:event] signOut'); }
   },
   logger: {
-    error(code, metadata) { console.error('[auth:logger:error]', code, metadata); },
-    warn(code) { console.warn('[auth:logger:warn]', code); },
-    debug(code, metadata) { console.debug('[auth:logger:debug]', code, metadata); }
+    error(code, metadata) { logger.error('[auth:nextauth:error]', { code, metadata }); },
+    warn(code) { logger.info('[auth:nextauth:warn]', { code }); },
+    debug(code, metadata) { logger.debug('[auth:nextauth:debug]', { code, metadata }); }
   },
   pages: { error: '/auth/error' }
 };
