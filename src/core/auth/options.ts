@@ -44,7 +44,7 @@ warnAuthEnv();
 
 // Log inicial de diagnóstico (sem expor segredos)
 // eslint-disable-next-line no-console -- Log inicial de diagnóstico útil durante desenvolvimento
-// eslint-disable-next-line no-console -- diagnóstico inicial
+// eslint-disable-next-line no-console -- diagnóstico inicial controlado
 console.log('[auth:init]', {
   hasDatabase,
   adapterLoaded: !!adapter,
