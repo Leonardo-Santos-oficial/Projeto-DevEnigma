@@ -21,4 +21,5 @@ pnpm-debug.log*
 Thumbs.db
 
 # Typescript
+coverage
 *.tsbuildinfo
