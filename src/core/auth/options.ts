@@ -53,19 +53,18 @@ console.log('[auth:init]', {
 });
 
 const providers: NextAuthOptions['providers'] = [];
-if (isGitHubAuthConfigured() && adapter) {
+if (isGitHubAuthConfigured()) {
   providers.push(GitHubProvider({
     clientId: process.env.GITHUB_ID!.trim(),
     clientSecret: process.env.GITHUB_SECRET!.trim()
   }));
-} else {
-  if (isGitHubAuthConfigured() && !adapter) {
+  if (!adapter) {
     // eslint-disable-next-line no-console
-    console.warn('[auth] GitHub credenciais presentes mas sem adapter (provável ausência de DATABASE_URL).');
-  } else {
-    // eslint-disable-next-line no-console
-    console.warn('[auth] GitHub OAuth não configurado completamente. Botão de login poderá ficar desabilitado.');
+    console.warn('[auth] GitHub OAuth ativo sem adapter Prisma — contas não serão persistidas em banco. Configure DATABASE_URL para persistência.');
   }
+} else {
+  // eslint-disable-next-line no-console
+  console.warn('[auth] GitHub OAuth não configurado (verifique GITHUB_ID/GITHUB_SECRET).');
 }
 
 export const authOptions: NextAuthOptions = {
