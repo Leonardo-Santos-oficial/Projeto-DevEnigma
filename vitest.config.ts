@@ -15,7 +15,7 @@ export default defineConfig({
     environment: 'node',
     include: ['src/**/*.spec.ts'],
     coverage: {
-      reporter: ['text', 'html'],
+      reporter: ['text', 'html', 'json-summary', 'lcov'],
       provider: 'v8',
       // We scope coverage to core business logic (domain + infrastructure) and logging utilities.
       // Framework integration (Next.js app router pages, React UI components, config, env, DI setup, seeds)
