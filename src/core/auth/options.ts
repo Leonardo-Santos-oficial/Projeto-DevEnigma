@@ -5,6 +5,7 @@ import type { JWT } from 'next-auth/jwt';
 import GitHubProvider from 'next-auth/providers/github';
 
 import { isGitHubAuthConfigured } from './status';
+import { logger } from '@core/logging/Logger';
 // Prisma adapter só é carregado se houver DATABASE_URL definido.
 let adapter: NextAuthOptions['adapter'] = undefined;
 const hasDatabase = !!process.env.DATABASE_URL;
@@ -44,8 +45,7 @@ warnAuthEnv();
 
 // Log inicial de diagnóstico (sem expor segredos)
 // eslint-disable-next-line no-console -- Log inicial de diagnóstico útil durante desenvolvimento
-// eslint-disable-next-line no-console -- diagnóstico inicial controlado
-console.log('[auth:init]', {
+logger.info('auth.init', {
   hasDatabase,
   adapterLoaded: !!adapter,
   githubEnvPresent: !!process.env.GITHUB_ID && !!process.env.GITHUB_SECRET,
