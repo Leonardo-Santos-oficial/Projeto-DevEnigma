@@ -5,7 +5,6 @@ import './globals.css';
 import { AuthSessionProvider } from '@core/auth/SessionProvider';
 import { AppHeader } from '@modules/shared/ui/AppHeader';
 import { MatrixRainBackground } from '@modules/shared/ui/MatrixRainBackground';
-import { AuthSessionProvider } from '@core/auth/SessionProvider';
 
 function AppShell({ children }: { children: React.ReactNode }) {
   return (
