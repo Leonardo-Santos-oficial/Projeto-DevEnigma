@@ -25,8 +25,12 @@ export class MockJudge0Client implements Judge0Client {
 
 // Função simples para derivar saída (KISS). Poderá ser substituída por execução real.
 function deriveOutput(code: string, input: string): string {
-  // Heurística trivial: se código contém 'Hello' retorna 'Hello World' ignorando input
+  // Regras simples para melhorar previsibilidade em modo mock:
+  // 1. Se contiver padrão console.log("Hello World") (tolerando espaços) => "Hello World"
+  // 2. Se contiver palavra 'hello' genérica => "Hello World"
+  // 3. Caso contrário: ecoa input
+  const normalized = code.replace(/\s+/g, ' ');
+  if (/console\.log\(\s*['"]Hello\s+World['"]\s*\)/i.test(normalized)) return 'Hello World';
   if (/hello/i.test(code)) return 'Hello World';
-  // Caso contrário só ecoa o input
   return input.trim();
 }

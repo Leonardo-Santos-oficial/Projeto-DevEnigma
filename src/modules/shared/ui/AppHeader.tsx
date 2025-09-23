@@ -3,9 +3,11 @@ import Link from 'next/link';
 
 import { getCurrentUser } from '@core/auth/session';
 import { AuthActions } from './AuthActions';
+import { isGitHubAuthConfigured } from '@core/auth/status';
 
 export async function AppHeader() {
   const user = await getCurrentUser();
+  const authConfigured = isGitHubAuthConfigured();
   return (
     <header className="relative z-20 border-b border-neutral-800/70 backdrop-blur-sm bg-neutral-950/60">
       <nav className="max-w-5xl mx-auto flex items-center gap-6 px-4 py-3" aria-label="Navegação principal">
@@ -15,7 +17,7 @@ export async function AppHeader() {
           <li><Link href="/ranking" className="hover:text-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 rounded px-1">Ranking</Link></li>
         </ul>
         <div className="flex items-center gap-3">
-          <AuthActions user={user} />
+          <AuthActions user={user} authConfigured={authConfigured} />
         </div>
       </nav>
     </header>

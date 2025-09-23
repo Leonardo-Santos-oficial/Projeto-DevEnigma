@@ -1,5 +1,109 @@
 # DevEnigma
 
+Plataforma educacional gamificada para praticar debugging e correção de código.
+
+## 1. Stack Principal
+- Next.js 14 (App Router / RSC)
+- TypeScript estrito
+- Tailwind CSS
+- Prisma (PostgreSQL)
+- NextAuth (GitHub OAuth)
+- Vitest (testes)
+
+## 2. Requisitos
+- Node 18+
+- (Uma das opções de banco) Docker Desktop OU Postgres local OU Neon (cloud)
+- Conta GitHub para OAuth
+
+## 3. Variáveis de Ambiente (.env)
+Crie um arquivo `.env` na raiz (não commite). Exemplo básico:
+
+```
+GITHUB_ID=seu_client_id
+GITHUB_SECRET=seu_client_secret
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=chave_muito_secreta_com_32_ou_mais_chars
+DATABASE_URL=postgresql://devenigma:devenigma@localhost:5432/devenigma?schema=public
+```
+
+Dicas:
+- Gere secret: `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`
+- Usando Neon: `?sslmode=require&schema=public` no final.
+
+## 4. Banco de Dados
+### Opção A: Docker
+```
+docker compose up -d
+```
+URL padrão já compatível com docker-compose incluído:
+```
+postgresql://devenigma:devenigma@localhost:5432/devenigma?schema=public
+```
+
+### Opção B: Postgres Local
+Crie usuário e database manualmente ou ajuste a `DATABASE_URL`.
+
+### Opção C: Neon (Cloud)
+1. Criar projeto em https://neon.tech
+2. Copiar connection string
+3. Ajustar `DATABASE_URL=postgresql://user:pass@host/db?sslmode=require&schema=public`
+
+## 5. Migrations & Seed
+Após banco acessível:
+```
+npx prisma migrate dev --name init
+npm run db:seed
+```
+Seed cria 1 Challenge + TestCases.
+
+## 6. Rodando a Aplicação
+```
+npm install
+npm run dev
+```
+Acesse: http://localhost:3000
+
+## 7. Login com GitHub
+1. Criar OAuth App: https://github.com/settings/developers
+  - Homepage: http://localhost:3000
+  - Authorization callback: http://localhost:3000/api/auth/callback/github
+2. Copiar Client ID / Secret para `.env`
+3. Reiniciar `npm run dev`
+4. Acessar `/api/auth/signin`
+
+## 8. Scripts Principais
+```
+npm run dev       # desenvolvimento
+npm run build     # build produção
+npm run test      # testes
+npm run db:seed   # executar seed
+```
+
+## 9. Troubleshooting
+| Sintoma | Causa | Solução |
+|--------|-------|---------|
+| P1001 Can't reach database | Banco não iniciado ou porta errada | Subir Docker / usar Neon / conferir porta |
+| Provider vazio | Falta DATABASE_URL ou GitHub env inválida | Corrigir `.env` e reiniciar dev server |
+| 404 client_id=missing | GITHUB_ID/SECRET placeholders | Preencher valores reais no GitHub App |
+| Erro sem código em /auth/error | Falha antes do redirect final | Ver logs `[auth:logger:error]` no terminal |
+
+## 10. Arquitetura (Resumo)
+- Providers GitHub só montados se credenciais válidas + adapter Prisma ativo.
+- Adapter Prisma condicionado a `DATABASE_URL`.
+- Criação automática de `Profile` no primeiro login.
+- Repositórios: In-memory vs Prisma (injeção futura para testes).
+
+## 11. Próximos Passos
+- Execução de código (Judge0)
+- Métricas de submissões / ranking
+- Tests adicionais para `isGitHubAuthConfigured`
+- Otimizações UI e acessibilidade
+
+## 12. Licença
+MIT (ajustar se necessário).
+
+# DevEnigma
+
 [![CI](https://github.com/Leonardo-Santos-oficial/Projeto-DevEnigma/actions/workflows/ci.yml/badge.svg)](https://github.com/Leonardo-Santos-oficial/Projeto-DevEnigma/actions/workflows/ci.yml)
 
 Plataforma educacional gamificada focada em aprimorar debugging, refatoração e compreensão de código existente.
@@ -79,6 +183,88 @@ prisma/
 4. `npx prisma generate`
 5. (Após criar migration) `npx prisma migrate dev`
 6. `npm run dev`
+
+## Autenticação & Fluxo de Perfil
+Autenticação via GitHub OAuth usando NextAuth + Prisma Adapter dinâmico.
+
+### Variáveis de Ambiente Necessárias
+| Variável | Obrigatória | Descrição |
+|----------|-------------|-----------|
+| `GITHUB_ID` | Sim | Client ID da OAuth App no GitHub |
+| `GITHUB_SECRET` | Sim | Client Secret da OAuth App |
+| `NEXTAUTH_URL` | Sim (prod) | URL pública (ex: `https://seu-dominio.com`) |
+| `NEXTAUTH_SECRET` | Sim (prod) | Chave para assinar/encriptar tokens de sessão |
+| `DATABASE_URL` | Não (dev) | Se ausente em dev, fallback para repositórios in-memory |
+| `USE_IN_MEMORY` | Opcional | Força modo in-memory (sobrepõe DB) |
+
+Em desenvolvimento local você pode inicialmente ignorar GitHub OAuth: o header mostrará botão de Login que redirecionará para erro enquanto variáveis não estiverem definidas. Para testar fluxo completo, configure a OAuth App (callback: `http://localhost:3000/api/auth/callback/github`).
+
+### Objetivos do Design
+1. Evitar acoplamento direto de componentes a Prisma (DIP)
+2. Criar `Profile` automaticamente no primeiro login (idempotente)
+3. Expor apenas `user.id`, `name`, `image` na UI (princípio de mínima superfície)
+4. Manter execução em ambientes sem DB (fallback in-memory) sem quebrar build
+
+### Sequência (Diagrama Textual)
+```
+Usuário               UI (RSC + Client)          NextAuth Route          GitHub OAuth        Prisma Adapter / DB
+  |  Clica "Login"        |                          |                      |                       |
+  |---------------------->| signIn('github')         |                      |                       |
+  |                       |---- redirect ----------->| /api/auth/signin     |                       |
+  |                       |                          |---- redirect ------->| /authorize            |
+  |                       |                          |<--- callback --------| code                  |
+  |                       |                          | troca code por token |                       |
+  |                       |                          | chama adapter -------|---------------------->| find/create User
+  |                       |                          | callback signIn      |                       | upsert Profile (se não existir)
+  |                       |<------- session ---------| session callback injeta user.id                |
+  |  Página recarrega     | getCurrentUserId()       |                      |                       |
+  |  vê avatar/nome       | render AuthActions       |                      |                       |
+```
+
+### Callbacks Implementados
+| Callback | Responsabilidade |
+|----------|------------------|
+| `signIn` | Garante existência de `Profile` para `user.id` (criação lazy) |
+| `session` | Injeta `user.id` no objeto da sessão (facilita `getCurrentUserId`) |
+
+### Camadas e Responsabilidades
+| Camada | Arquivo/Local | Função |
+|--------|---------------|--------|
+| UI Server | `AppHeader.tsx` | Obtém sessão e decide exibir avatar ou botão Login |
+| UI Client | `AuthActions.tsx` | Dispara `signIn('github')` / `signOut()` |
+| Helpers | `core/auth/session.ts` | `getCurrentUser`, `getCurrentUserId` (abstraem NextAuth) |
+| Config | `core/auth/options.ts` | Declara providers, adapter dinâmico, callbacks |
+| Persistência | Prisma Adapter | Cria/consulta `User`, `Account`, `Session`, `VerificationToken` |
+| Domínio | `Profile` | Armazena métricas (solved, attempts) para ranking |
+
+### Estratégia de Adapter Dinâmico
+Carregamos `@next-auth/prisma-adapter` e `@prisma/client` dinamicamente para:
+1. Evitar erro de import em ambiente que inicializa sem `DATABASE_URL`
+2. Permitir testes unitários que simulam autenticação sem levantar DB real
+
+Fallback: Se o carregamento falhar (ex: sem dependência gerada), a aplicação pode optar por fluxo in-memory (usuário anônimo) mantendo páginas funcionais.
+
+### Submissões e Autorização
+- Submissões exigem `userId` para vincular histórico.
+- `SubmissionPanel` desabilita botão quando usuário não autenticado (feedback direto, evita 401 tardio).
+- Endpoint de submissão deve validar presença de `userId` antes de persistir (defensivo — mesmo que UI esteja correta).
+
+### Erros & Observabilidade
+| Situação | Comportamento | Mitigação |
+|----------|---------------|-----------|
+| Falha OAuth | Redireciona para página de erro NextAuth | Conferir `GITHUB_ID/SECRET` e callback |
+| Ausência `NEXTAUTH_SECRET` em prod | NextAuth warning / inseguro | Gerar com `openssl rand -base64 32` |
+| DB offline | Fallback (se configurado) ou erro no adapter | Monitorar logs `bootstrap.fallbackInMemory` |
+
+### Próximas Evoluções
+- Atualizar `Profile` com avatar derivado quando campo estiver vazio.
+- Permitir custom username (slug único) separado do nome GitHub.
+- Auditoria básica de login (último acesso, contador logins).
+- Revogação manual de sessões ativas via painel futuro.
+
+### Resumo de Benefícios
+Simples, idempotente, extensível: novo provedor (ex: Google) exige apenas adicionar na config; lógica de criação de perfil permanece reutilizável sem alterar componentes de UI.
+
 
 ## Próximos Passos Planejados
 - Execução real via Judge0 HTTP (substituir mock)

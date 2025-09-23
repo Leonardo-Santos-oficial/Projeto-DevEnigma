@@ -1,13 +1,13 @@
 'use client';
 import React from 'react';
 import { useSession } from 'next-auth/react';
-
 import { CodeEditor } from './components/CodeEditor';
 import { useSubmission } from './useSubmission';
 
 interface SubmissionPanelProps { challengeId: string; userId?: string; language: string; initialCode: string; onCodeChange?: (code: string) => void; }
 
 export function SubmissionPanel({ challengeId, userId, language, initialCode, onCodeChange }: SubmissionPanelProps) {
+  // Reforça userId com sessão cliente (SSR pode atrasar id)
   const { data: clientSession } = useSession();
   const effectiveUserId = (clientSession?.user && (clientSession.user as { id?: string }).id) || userId;
   if (process.env.NODE_ENV !== 'production') {

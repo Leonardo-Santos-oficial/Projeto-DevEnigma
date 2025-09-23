@@ -16,4 +16,3 @@ export function isGitHubAuthConfigured() {
   if (GITHUB_ID.length < 10 || GITHUB_SECRET.length < 20) return false;
   return true;
 }
-

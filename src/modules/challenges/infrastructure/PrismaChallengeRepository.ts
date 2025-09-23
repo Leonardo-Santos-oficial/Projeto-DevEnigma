@@ -8,25 +8,28 @@ export class PrismaChallengeRepository implements ChallengeRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
   async findById(id: string) {
-    const data = await this.prisma.challenge.findUnique({ where: { id } });
-    if (!data) return null;
-    return Challenge.create(data);
+    const row = await this.prisma.challenge.findUnique({ where: { id } });
+    if (!row) return null;
+    return this.toDomain(row);
   }
 
   async findAll() {
-    const list = await this.prisma.challenge.findMany({ orderBy: { createdAt: 'desc' } });
-    return list.map(c => Challenge.create(c));
+    const rows = await this.prisma.challenge.findMany({ orderBy: { createdAt: 'desc' } });
+    return rows.map(r => this.toDomain(r));
   }
 
   async save(challenge: Challenge) {
-    await this.prisma.challenge.upsert({
+    const delegate = this.prisma.challenge as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+    const tags = challenge.tags ?? [];
+    await delegate.upsert({
       where: { id: challenge.id },
       update: {
         title: challenge.title,
         description: challenge.description,
         starterCode: challenge.starterCode,
         difficulty: challenge.difficulty,
-        language: challenge.language
+        language: challenge.language,
+        tags: { set: tags }
       },
       create: {
         id: challenge.id,
@@ -34,8 +37,13 @@ export class PrismaChallengeRepository implements ChallengeRepository {
         description: challenge.description,
         starterCode: challenge.starterCode,
         difficulty: challenge.difficulty,
-        language: challenge.language
+        language: challenge.language,
+        tags
       }
     });
+  }
+
+  private toDomain(row: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+    return Challenge.create({ ...row, tags: (row.tags ?? []) });
   }
 }

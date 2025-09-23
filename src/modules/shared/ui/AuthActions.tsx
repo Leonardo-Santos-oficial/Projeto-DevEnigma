@@ -4,15 +4,18 @@ import React from 'react';
 
 interface AuthActionsProps {
   user: { name?: string | null; image?: string | null; id?: string } | null;
+  authConfigured?: boolean;
 }
 
-export function AuthActions({ user }: AuthActionsProps) {
+export function AuthActions({ user, authConfigured }: AuthActionsProps) {
   if (!user) {
     return (
       <button
-        onClick={() => signIn('github')}
-        className="px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-400/60 focus:ring-offset-2 focus:ring-offset-neutral-900"
-      >Login GitHub</button>
+        onClick={() => authConfigured && signIn('github')}
+        disabled={!authConfigured}
+        className="px-3 py-1.5 rounded bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-emerald-500 text-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-400/60 focus:ring-offset-2 focus:ring-offset-neutral-900"
+        title={authConfigured ? 'Entrar com GitHub' : 'GitHub OAuth não configurado'}
+      >{authConfigured ? 'Login GitHub' : 'Login indisponível'}</button>
     );
   }
   return (

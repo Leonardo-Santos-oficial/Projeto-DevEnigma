@@ -6,6 +6,7 @@ export interface ChallengeProps {
   starterCode: string;
   difficulty: 'EASY' | 'MEDIUM' | 'HARD';
   language: string;
+  tags?: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -32,6 +33,9 @@ export class Challenge {
     if (!props.language || props.language.trim().length === 0) {
       throw new Error('Language obrigatória');
     }
+    if (props.tags && props.tags.some(t => !t || t.trim().length === 0)) {
+      throw new Error('Tags não podem conter valores vazios');
+    }
     return new Challenge(props);
   }
 
@@ -41,6 +45,7 @@ export class Challenge {
   get starterCode() { return this.props.starterCode; }
   get difficulty() { return this.props.difficulty; }
   get language() { return this.props.language; }
+  get tags() { return this.props.tags ?? []; }
   get createdAt() { return this.props.createdAt; }
   get updatedAt() { return this.props.updatedAt; }
 }

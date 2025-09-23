@@ -13,7 +13,7 @@ export function useSubmission(opts: UseSubmissionOptions) {
   const [result, setResult] = useState<SubmissionResultView | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [attempt, setAttempt] = useState(0);
+  const [attempt, setAttempt] = useState(0); // contador de tentativas
 
   const submit = useCallback(async () => {
     if (!code.trim()) return;

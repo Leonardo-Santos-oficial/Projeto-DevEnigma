@@ -1,7 +1,6 @@
-// Composition Root
-import { PrismaClient } from '@prisma/client';
-
+// Composition Root (composition root isolado: SRP para configurar DI)
 import { loadEnv } from '@core/config/env';
+import { prisma as sharedPrisma } from '@core/database/prismaClient';
 import { logger } from '@core/logging/Logger';
 import { Challenge } from '@modules/challenges/domain/Challenge';
 import { TestCase } from '@modules/challenges/domain/TestCase';
@@ -31,13 +30,15 @@ if (!isBuilding && process.env.NODE_ENV !== 'production' && !process.env.DATABAS
 }
 const env = loadEnv(!process.env.USE_IN_MEMORY);
 
+// Prisma é opcional dependendo do modo (in-memory vs banco real)
+import type { PrismaClient } from '@prisma/client';
 let prisma: PrismaClient | null = null;
 if (env.USE_IN_MEMORY !== 'true') {
   if (!env.DATABASE_URL) {
     throw new Error('DATABASE_URL ausente. Defina no .env ou use USE_IN_MEMORY=true');
   }
-    prisma = new PrismaClient();
-    container.registerSingleton('PrismaClient', prisma);
+  prisma = sharedPrisma;
+  container.registerSingleton('PrismaClient', prisma);
 }
 
 const USE_IN_MEMORY = process.env.USE_IN_MEMORY === 'true';
@@ -100,7 +101,8 @@ if (USE_IN_MEMORY) {
     TOKENS.ProfileRepository,
     new InMemoryProfileRepository([])
   );
-} else if (!isBuilding && prisma) {
+} else if (prisma) {
+  // Durante build (SSG/ISR) precisamos que os repositórios Prisma existam para rotas pré-renderizadas (ex: ranking)
   container.registerFactory(TOKENS.SubmissionRepository, () => new PrismaSubmissionRepository(prisma!));
   container.registerFactory(TOKENS.ProfileRepository, () => new PrismaProfileRepository(prisma!));
 }

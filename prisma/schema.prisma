@@ -8,7 +8,13 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  // Para usar Prisma Accelerate/Data Proxy:
+  //  - Defina DATABASE_URL com o protocolo prisma+postgres (ex: prisma+postgres://...api_key=...)
+  //  - Defina DIRECT_DATABASE_URL com a URL postgres normal do MESMO banco (postgresql://user:pass@host/db?schema=public)
+  //  - Rode: npx prisma generate --data-proxy
+  //  - Migrações SEMPRE usam a directUrl.
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
 }
 
 // Modelos de Autenticação (NextAuth)
@@ -67,6 +73,7 @@ model Challenge {
   starterCode  String
   difficulty   Difficulty   @default(EASY)
   language     String
+  tags         String[]     @default([])
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
   testCases    TestCase[]
