@@ -1,10 +1,11 @@
 /* eslint-disable import/order */
 import { describe, it, expect, vi } from 'vitest';
 import type { PrismaClient } from '@prisma/client';
+
 import { PrismaTestCaseRepository } from '@modules/challenges/infrastructure/PrismaTestCaseRepository';
 import { TestCase } from '@modules/challenges/domain/TestCase';
 
-function createPrismaMock(overrides: Partial<PrismaClient['testCase']> = {}, extra: any = {}) {
+function createPrismaMock(overrides: Partial<PrismaClient['testCase']> = {}, extra: Record<string, unknown> = {}) {
   return {
     testCase: {
       findMany: vi.fn(),
@@ -12,7 +13,7 @@ function createPrismaMock(overrides: Partial<PrismaClient['testCase']> = {}, ext
       createMany: vi.fn(),
       ...overrides
     },
-    $transaction: vi.fn(async (ops: any[]) => { await Promise.all(ops.map(o => o)); })
+  $transaction: vi.fn(async (ops: Array<Promise<unknown> | unknown>) => { await Promise.all(ops.map(o => o)); })
     , ...extra
   } as unknown as PrismaClient;
 }

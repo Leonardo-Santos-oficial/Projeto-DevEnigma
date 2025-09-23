@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+
 import { Challenge, type ChallengeProps } from '../../domain/Challenge';
 
 function makeBase(overrides: Partial<ChallengeProps> = {}): ChallengeProps {

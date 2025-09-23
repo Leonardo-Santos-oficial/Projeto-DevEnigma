@@ -1,4 +1,5 @@
 /* Seed inicial: cria challenge + test cases se não existirem */
+/* eslint-disable no-console -- Console output aqui é intencional para feedback rápido de seed */
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();

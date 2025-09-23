@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { InMemoryChallengeRepository } from '../../infrastructure/InMemoryChallengeRepository';
+
 import { Challenge } from '../../domain/Challenge';
+import { InMemoryChallengeRepository } from '../../infrastructure/InMemoryChallengeRepository';
 
 function makeChallenge(id = 'c1') {
   const now = new Date();

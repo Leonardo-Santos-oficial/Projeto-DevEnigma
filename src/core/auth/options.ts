@@ -3,6 +3,7 @@
 import type { Session, NextAuthOptions } from 'next-auth';
 import type { JWT } from 'next-auth/jwt';
 import GitHubProvider from 'next-auth/providers/github';
+
 import { isGitHubAuthConfigured } from './status';
 // Prisma adapter só é carregado se houver DATABASE_URL definido.
 let adapter: NextAuthOptions['adapter'] = undefined;
@@ -42,7 +43,7 @@ function warnAuthEnv() {
 warnAuthEnv();
 
 // Log inicial de diagnóstico (sem expor segredos)
-// eslint-disable-next-line no-console
+// eslint-disable-next-line no-console -- Log inicial de diagnóstico útil durante desenvolvimento
 console.log('[auth:init]', {
   hasDatabase,
   adapterLoaded: !!adapter,

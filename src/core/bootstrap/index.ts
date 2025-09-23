@@ -1,4 +1,5 @@
 // Composition Root (composition root isolado: SRP para configurar DI)
+import type { PrismaClient } from '@prisma/client';
 import { loadEnv } from '@core/config/env';
 import { prisma as sharedPrisma } from '@core/database/prismaClient';
 import { logger } from '@core/logging/Logger';
@@ -31,7 +32,6 @@ if (!isBuilding && process.env.NODE_ENV !== 'production' && !process.env.DATABAS
 const env = loadEnv(!process.env.USE_IN_MEMORY);
 
 // Prisma é opcional dependendo do modo (in-memory vs banco real)
-import type { PrismaClient } from '@prisma/client';
 let prisma: PrismaClient | null = null;
 if (env.USE_IN_MEMORY !== 'true') {
   if (!env.DATABASE_URL) {

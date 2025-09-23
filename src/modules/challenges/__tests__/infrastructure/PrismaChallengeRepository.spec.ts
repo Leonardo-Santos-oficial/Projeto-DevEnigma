@@ -55,14 +55,14 @@ describe('PrismaChallengeRepository', () => {
     const now = new Date();
     const prisma = createPrismaMock({ upsert: vi.fn().mockResolvedValue({}) });
     const repo = new PrismaChallengeRepository(prisma);
-    const challengeData = { id: 't1', title: 'Titulo Tags', description: 'Descricao longa com tags', starterCode: '//', difficulty: 'EASY', language: 'js', createdAt: now, updatedAt: now, tags: ['array','strings'] } as any;
+    const challengeData = { id: 't1', title: 'Titulo Tags', description: 'Descricao longa com tags', starterCode: '//', difficulty: 'EASY' as const, language: 'js', createdAt: now, updatedAt: now, tags: ['array','strings'] };
     // usamos Challenge.create para validar regras, mas aqui focamos no repo: simulamos objeto shape prisma -> domain create já ocorre dentro do repo quando leitura
     // Para salvar precisamos de uma entidade domain real; import dinâmico para evitar alterar topo
     const { Challenge } = await import('../../domain/Challenge');
     const entity = Challenge.create(challengeData);
     await repo.save(entity);
     expect(prisma.challenge.upsert).toHaveBeenCalled();
-    const call = (prisma.challenge.upsert as any).mock.calls[0][0];
+  const call = (prisma.challenge.upsert as unknown as { mock: { calls: any[][] } }).mock.calls[0][0];
     // Em atualização usamos sintaxe { set: [...] } para substituir todo array
     expect(call.update.tags).toEqual({ set: ['array','strings'] });
     // Na criação pode ser passado diretamente como array
