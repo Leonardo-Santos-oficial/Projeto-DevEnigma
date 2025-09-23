@@ -1,8 +1,9 @@
-import { describe, it, expect, vi } from 'vitest';
 import type { PrismaClient } from '@prisma/client';
-import { PrismaSubmissionRepository } from '@modules/submissions/infrastructure/PrismaSubmissionRepository';
+import { describe, it, expect, vi } from 'vitest';
+
 import { Submission } from '@modules/submissions/domain/Submission';
 import { SubmissionStatus } from '@modules/submissions/domain/SubmissionStatus';
+import { PrismaSubmissionRepository } from '@modules/submissions/infrastructure/PrismaSubmissionRepository';
 
 function prismaMock(overrides: Partial<PrismaClient['submission']> = {}) {
   return {
